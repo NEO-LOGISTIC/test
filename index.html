@@ -1417,11 +1417,11 @@ html { -webkit-text-size-adjust: 100%; }
         <!-- Búsqueda rápida por código -->
         <div class="card mb-4">
           <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:14px">
-            ⚡ Carga Rápida por Código de Cliente
+            ⚡ <span id="quick-titulo">Carga Rápida por Código de Cliente</span>
           </div>
           <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
             <div class="form-group" style="flex:1;min-width:180px">
-              <label>Código de cliente</label>
+              <label id="quick-label">Código de cliente</label>
               <input type="text" id="quick-code" placeholder="Ej: CLI001" oninput="buscarClienteRapido()" autocomplete="off">
             </div>
             <button class="btn btn-secondary btn-sm" onclick="buscarClienteRapido()">
@@ -1497,6 +1497,7 @@ html { -webkit-text-size-adjust: 100%; }
                 <option value="asistencia">🛠️ Asistencia Técnica</option>
                 <option value="retiro">🔄 Retiro de Mercadería</option>
                 <option value="cobranza">💰 Cobranza</option>
+                <option value="encomienda">📬 Encomienda (Transportadora)</option>
               </select>
             </div>
             <div class="form-group">
@@ -1853,6 +1854,10 @@ html { -webkit-text-size-adjust: 100%; }
             ➕ Nuevo Técnico
           </button>
         </div>
+
+        <!-- Resumen asistencias pendientes por técnico -->
+        <div id="tecnicos-resumen-pendientes" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:20px"></div>
+
         <div class="card">
           <div class="table-wrap">
             <table>
@@ -2999,8 +3004,30 @@ function closeSidebar() {
 function buscarClienteRapido() {
   const codigo = document.getElementById('quick-code').value.trim().toUpperCase();
   const resultado = document.getElementById('quick-result');
+  const tipo = document.getElementById('f-tipo')?.value;
 
   if (!codigo) { resultado.classList.add('hidden'); return; }
+
+  if (tipo === 'retiro') {
+    // Buscar en proveedores en lugar de clientes
+    const prov = (APP.proveedores || []).find(function(p) {
+      const cod = String(p.codigo || p.id || '').toUpperCase();
+      const nom = (p.nombre || '').toUpperCase();
+      return cod === codigo || cod.includes(codigo) || nom.includes(codigo);
+    });
+    if (prov) {
+      document.getElementById('qr-nombre').textContent = prov.nombre;
+      const dirMostrar = (prov.coords && prov.coords.lat) ? (prov.obs || prov.direccion || 'Ubicación guardada') : (prov.direccion || prov.obs || '—');
+      document.getElementById('qr-info').textContent = dirMostrar + (prov.telefono ? ' · ' + prov.telefono : '');
+      resultado.classList.remove('hidden');
+      APP._clienteSeleccionado = null;
+      rellenarFormularioProveedor(prov);
+    } else {
+      resultado.classList.add('hidden');
+      if (codigo.length >= 2) toast('No se encontró el proveedor: ' + codigo, 'error');
+    }
+    return;
+  }
 
   const cliente = APP.clientes.find(c =>
     (c.codigo || '').toUpperCase() === codigo ||
@@ -3020,6 +3047,28 @@ function buscarClienteRapido() {
     APP._clienteSeleccionado = null;
     if (codigo.length >= 2) toast('No se encontró el código: ' + codigo, 'error');
   }
+}
+
+function rellenarFormularioProveedor(prov) {
+  const codInp = document.getElementById('f-codigo');
+  if (codInp) codInp.value = prov.codigo || prov.id || '';
+  const cliInp = document.getElementById('f-cliente');
+  if (cliInp) cliInp.value = prov.nombre || '';
+  const dirInp = document.getElementById('f-direccion');
+  if (dirInp) {
+    if (prov.coords && prov.coords.lat) {
+      dirInp.value = prov.coords.lat.toFixed(6) + ',' + prov.coords.lng.toFixed(6);
+    } else {
+      dirInp.value = prov.direccion || prov.obs || '';
+    }
+  }
+  const telInp = document.getElementById('f-telefono');
+  if (telInp) telInp.value = prov.telefono || '';
+  if (prov.mapsLink) {
+    const mlInp = document.getElementById('f-maps-link');
+    if (mlInp) { mlInp.value = prov.mapsLink; if (typeof extraerCoordenadas === 'function') extraerCoordenadas(); }
+  }
+  if (prov.coords) window._coordsActuales = prov.coords;
 }
 
 function rellenarFormulario(cliente) {
@@ -3197,7 +3246,7 @@ function renderDashboard() {
       </td>
         <td style="color:var(--white-dim);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.direccion}</td>
         <td>${e.zona || '—'}</td>
-        <td>${badgeHTML(e.estado)}</td>
+        <td>${tipoBadgeHTML(e.tipo)} ${badgeHTML(e.estado)}</td>
         <td>
           <button class="btn btn-ghost btn-xs" onclick="abrirModalEstado('${e.id}')">⚡ Estado</button>
         </td>
@@ -3254,7 +3303,7 @@ function renderEntregas(filtro = '', estadoFiltro = '') {
       <td>${e.zona || '—'}</td>
       <td class="col-hide-mobile">${e.vendedor || '—'}</td>
       <td class="col-hide-mobile">${e.telefono ? `<a href="tel:${e.telefono}" style="color:var(--blue-light)">${e.telefono}</a>` : '—'}</td>
-      <td>${badgeHTML(e.estado)}</td>
+      <td>${tipoBadgeHTML(e.tipo)} ${badgeHTML(e.estado)}</td>
       <td>
         <div class="action-btns">
           <button class="btn btn-ghost btn-xs" onclick="abrirModalEstado('${e.id}')">⚡</button>
@@ -3357,7 +3406,7 @@ function renderRuta() {
           <small>${e.direccion} ${e.zona ? '· ' + e.zona : ''} ${e.vendedor ? '· ' + e.vendedor : ''}</small>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
-          ${badgeHTML(e.estado)}
+          ${tipoBadgeHTML(e.tipo)} ${badgeHTML(e.estado)}
           <button class="btn btn-ghost btn-xs" onclick="abrirModalEstado('${e.id}')">⚡</button>
         </div>
       </div>`;
@@ -3721,10 +3770,25 @@ function badgeHTML(estado) {
     rescheduled: ['rescheduled','🔄', 'Reprogramado'],
     asistido:    ['delivered',  '🛠️', 'Asistido'],
     retirado:    ['transit',    '📦', 'Retirado'],
-    cobrado:     ['delivered',  '💰', 'Cobrado']
+    cobrado:     ['delivered',  '💰', 'Cobrado'],
+    cambio_producto: ['rescheduled', '🔄', 'Cambio de Producto'],
+    despachada:  ['delivered',  '📬', 'Despachada']
   };
   const [cls, icon, label] = mapa[estado] || ['pending','❓','Desconocido'];
   return `<span class="badge dot ${cls}">${label}</span>`;
+}
+
+function tipoBadgeHTML(tipo) {
+  const mapa = {
+    reparto:    ['#1E6FFF', '📦', 'Entrega'],
+    entrega:    ['#1E6FFF', '📦', 'Entrega'],
+    asistencia: ['#7C3AED', '🛠️', 'Asistencia Técnica'],
+    retiro:     ['#FF8C00', '🔄', 'Retiro'],
+    cobranza:   ['#00D68F', '💰', 'Cobranza'],
+    encomienda: ['#A855F7', '📬', 'Encomienda']
+  };
+  const [color, icon, label] = mapa[tipo] || ['#888', '❓', tipo || '—'];
+  return '<span style="display:inline-flex;align-items:center;gap:4px;background:' + color + '22;color:' + color + ';border:1px solid ' + color + '50;border-radius:6px;padding:3px 9px;font-size:11.5px;font-weight:700;white-space:nowrap">' + icon + ' ' + label + '</span>';
 }
 
 function estadoLabel(estado) {
@@ -4328,13 +4392,16 @@ function renderChoferView(nombreChofer) {
           ${e.obs ? `<div style="font-size:11.5px;color:var(--yellow);margin-top:3px">⚠️ ${e.obs}</div>` : ''}
           ${isDelivered ? `<div style="font-size:12px;color:var(--green);margin-top:4px">✅ Entregado a las ${e.fechaEntrega||''}</div>` : ''}
         </div>
-        ${badgeHTML(e.estado)}
+        ${tipoBadgeHTML(e.tipo)} ${badgeHTML(e.estado)}
       </div>
       ${!isDelivered ? `
       <div class="chofer-card-actions">
         <button class="btn btn-secondary btn-sm" onclick="abrirMaps('${e.direccion.replace(/'/g,"\'")}')">📍 Navegar</button>
         ${e.telefono ? `<button class="btn btn-ghost btn-sm" onclick="window.open('tel:${e.telefono}')">📞 Llamar</button>` : ''}
-        <button class="btn btn-green btn-sm" onclick="abrirConfirmarEntregaChofer('${e.id}','${e.cliente.replace(/'/g,"\'")}')">✅ Entregar</button>
+        ${e.tipo === 'cobranza' ? `<button class="btn btn-sm" style="background:#00A870;color:#fff" onclick="marcarCobradoChofer('${e.id}')">💰 Cobrado</button>` :
+          e.tipo === 'retiro' ? `<button class="btn btn-sm" style="background:var(--blue-dark);color:#fff" onclick="marcarRetiradoChofer('${e.id}')">📦 Retirado</button>` :
+          e.tipo === 'encomienda' ? `<button class="btn btn-sm" style="background:#7C3AED;color:#fff" onclick="marcarDespachada('${e.id}')">📬 Despachada</button>` :
+          `<button class="btn btn-green btn-sm" onclick="abrirConfirmarEntregaChofer('${e.id}','${e.cliente.replace(/'/g,"\'")}')">✅ Entregar</button>`}
         <button class="btn btn-yellow btn-sm" onclick="reprogramarEntregaChofer('${e.id}')">🔄 Reprogramar</button>
       </div>` : ''}
     </div>`;
@@ -4949,6 +5016,24 @@ function onTipoChange() {
   // Reset all
   [choferRow, tecnicoRow, provRow].forEach(el => el?.classList.add('hidden'));
 
+  // Actualizar título y label del Acceso Rápido según tipo
+  const qTitulo = document.getElementById('quick-titulo');
+  const qLabel  = document.getElementById('quick-label');
+  const qInput  = document.getElementById('quick-code');
+  const qResult = document.getElementById('quick-result');
+  if (qResult) qResult.classList.add('hidden');
+  if (qInput) qInput.value = '';
+
+  if (tipo === 'retiro') {
+    if (qTitulo) qTitulo.textContent = 'Carga Rápida por Proveedor';
+    if (qLabel) qLabel.textContent = 'Código o nombre del proveedor';
+    if (qInput) qInput.placeholder = 'Ej: PROV-001 o Lotus';
+  } else {
+    if (qTitulo) qTitulo.textContent = 'Carga Rápida por Código de Cliente';
+    if (qLabel) qLabel.textContent = 'Código de cliente';
+    if (qInput) qInput.placeholder = 'Ej: CLI001';
+  }
+
   if (tipo === 'asistencia') {
     tecnicoRow?.classList.remove('hidden');
     poblarSelectTecnico();
@@ -4966,6 +5051,13 @@ function onTipoChange() {
     if (labelCodigo) labelCodigo.textContent = 'Código cliente';
     const inp = document.getElementById('f-codigo');
     if (inp) inp.placeholder = 'Ej: CLI001';
+  } else if (tipo === 'encomienda') {
+    choferRow?.classList.remove('hidden');
+    if (labelCodigo) labelCodigo.textContent = 'Código cliente';
+    const inpE = document.getElementById('f-codigo');
+    if (inpE) inpE.placeholder = 'Ej: CLI001';
+    const obs = document.getElementById('f-obs');
+    if (obs && !obs.value) obs.placeholder = 'Nombre de la transportadora (ej: Transporte García)';
   } else {
     // Reparto
     choferRow?.classList.remove('hidden');
@@ -5107,6 +5199,38 @@ function renderTecnicos() {
   if (!tbody) return;
   tbody.innerHTML = '';
 
+  // Resumen de pendientes por técnico
+  const resumenEl = document.getElementById('tecnicos-resumen-pendientes');
+  if (resumenEl) {
+    const tecs = APP.tecnicos || [];
+    if (tecs.length === 0) {
+      resumenEl.innerHTML = '';
+    } else {
+      resumenEl.innerHTML = tecs.map(function(t) {
+        const pendientes = APP.entregas.filter(function(e) {
+          return e.tecnico === t.nombre && e.tipo === 'asistencia' && (e.estado === 'pending' || e.estado === 'transit');
+        }).length;
+        const hoy = APP.entregas.filter(function(e) {
+          return e.tecnico === t.nombre && e.tipo === 'asistencia' && e.estado === 'asistido';
+        }).length;
+        const color = pendientes > 0 ? 'var(--yellow)' : 'var(--green)';
+        return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">' +
+          '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#4C1D95);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0">' + (t.nombre||'?').charAt(0).toUpperCase() + '</div>' +
+          '<div><div style="font-weight:700;font-size:14px">' + t.nombre + '</div>' +
+          '<div style="font-size:11px;color:var(--white-dim)">' + (t.zona || 'Sin zona asignada') + '</div></div></div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          '<div style="background:var(--bg-input);border-radius:8px;padding:10px;text-align:center">' +
+          '<div style="font-size:24px;font-weight:800;color:' + color + ';font-family:var(--font-display)">' + pendientes + '</div>' +
+          '<div style="font-size:11px;color:var(--white-dim)">Pendientes</div></div>' +
+          '<div style="background:var(--bg-input);border-radius:8px;padding:10px;text-align:center">' +
+          '<div style="font-size:24px;font-weight:800;color:var(--green);font-family:var(--font-display)">' + hoy + '</div>' +
+          '<div style="font-size:11px;color:var(--white-dim)">Completadas hoy</div></div>' +
+          '</div></div>';
+      }).join('');
+    }
+  }
+
   const lista = APP.tecnicos || [];
   if (lista.length === 0) { empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
@@ -5238,7 +5362,7 @@ function renderCobranzas() {
       <td><strong>${e.cliente || e.proveedor || '—'}</strong></td>
       <td style="color:var(--white-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.direccion || '—'}</td>
       <td>${e.chofer || '—'}</td>
-      <td>${badgeHTML(e.estado)}</td>
+      <td>${tipoBadgeHTML(e.tipo)} ${badgeHTML(e.estado)}</td>
       <td style="color:var(--white-dim);font-size:12px">${e.fechaEntrega || e.horaAgregado || '—'}</td>
       <td>
         <div class="action-btns">
@@ -5872,6 +5996,24 @@ function desasignarChofer(id) {
   fbActualizarEntrega(id, { chofer: '' })
     .then(() => toast('Chofer desasignado', 'info'))
     .catch(() => toast('Error al desasignar', 'error'));
+}
+
+// ─── DESPACHADA para encomiendas ─────────────────────────
+
+function marcarDespachada(id) {
+  const e = APP.entregas.find(function(x) { return x.id === id; });
+  if (!e) return;
+  const hora = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  fbActualizarEntrega(id, {estado:'despachada', fechaEntrega:hora}).then(function() {
+    toast('📬 Encomienda despachada', 'success');
+    if (e.vendedor) {
+      const vend = APP.vendedores.find(function(v) { return v.nombre === e.vendedor; });
+      if (vend && vend.wa) {
+        const msg = '📬 *ENCOMIENDA DESPACHADA*\\n\\n📋 Cliente: ' + e.cliente + '\\n🚚 Transportadora: ' + (e.obs||'—') + '\\n🕐 Hora: ' + hora + '\\n\\n_Neo Logistic_';
+        window.open('https://api.whatsapp.com/send?phone=' + vend.wa.replace(/\D/g,'') + '&text=' + encodeURIComponent(msg), '_blank');
+      }
+    }
+  });
 }
 
 
