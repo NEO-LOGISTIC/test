@@ -5569,11 +5569,7 @@ function actualizarMapa() {
 }
 
 // Actualizar mapa cuando cambia el estado de entregas
-const _origRenderRutaChofer = renderRutaChofer;
-function renderRutaChofer() {
-  _origRenderRutaChofer();
-  if (_mapaAbierto) actualizarMapa();
-}
+// (renderRutaChofer override removed - caused infinite recursion)
 
 
 
