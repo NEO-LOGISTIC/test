@@ -3329,7 +3329,7 @@ function renderEntregas(filtro = '', estadoFiltro = '') {
       <td>
         <div class="action-btns">
           <button class="btn btn-ghost btn-xs" onclick="abrirModalEstado('${e.id}')">⚡</button>
-          <button class="btn btn-ghost btn-xs" onclick="abrirMaps('${e.direccion}')">📍</button>
+          <button class="btn btn-ghost btn-xs" onclick="abrirMaps('${e.direccion}','${e.id}')">📍</button>
           <button class="btn btn-ghost btn-xs" onclick="abrirModalAsignarChofer('${e.id}')" title="Asignar chofer">🚚</button>
           <button class="btn btn-ghost btn-xs" onclick="abrirModalAsignarVendedor('${e.id}')" title="Asignar vendedor">👤</button>
           <button class="btn btn-ghost btn-xs" onclick="eliminarEntrega('${e.id}')" style="color:var(--red)">✕</button>
@@ -3641,10 +3641,29 @@ function entregadoWhatsapp() {
 }
 
 // ─── RUTA GOOGLE MAPS ──────────────────────────────────────
-function abrirMaps(direccion) {
-  // Funciona en celular y PC
-  const ciudad = 'Asunción, Paraguay';
-  const query = encodeURIComponent(direccion + ', ' + ciudad);
+function abrirMaps(direccion, entregaId) {
+  const ciudad = ', Asunción, Paraguay';
+
+  // Si tenemos el id de la entrega, buscar coords o mapsLink primero
+  if (entregaId) {
+    const e = APP.entregas.find(x => x.id === entregaId);
+    if (e) {
+      // 1. Coordenadas exactas
+      if (e.coords && e.coords.lat) {
+        window.open(`https://www.google.com/maps/search/?api=1&query=${e.coords.lat},${e.coords.lng}`, '_blank');
+        return;
+      }
+      // 2. Link de Maps directo
+      const dirGenerica = !e.direccion || /^a\s*confirmar$/i.test(e.direccion.trim());
+      if (dirGenerica && e.mapsLink) {
+        window.open(e.mapsLink, '_blank');
+        return;
+      }
+    }
+  }
+
+  // Fallback: usar dirección en texto
+  const query = encodeURIComponent(direccion + ciudad);
   window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
 }
 
@@ -5934,9 +5953,30 @@ function generarURLMaps(paradas, base) {
 
   // Usar coordenadas exactas si están disponibles, sino usar dirección de texto
   function getDestino(e) {
+    // 1. Prioridad: coordenadas exactas guardadas
     if (e.coords && e.coords.lat && e.coords.lng) {
       return encodeURIComponent(`${e.coords.lat},${e.coords.lng}`);
     }
+    // 2. Si la dirección es genérica ("a confirmar", vacía) y hay link de Maps,
+    //    extraer coordenadas del link directamente
+    const dirGenerica = !e.direccion || /^a\s*confirmar$/i.test(e.direccion.trim());
+    if (dirGenerica && e.mapsLink) {
+      const patrones = [
+        /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+        /q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+        /ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
+      ];
+      for (const p of patrones) {
+        const m = e.mapsLink.match(p);
+        if (m) return encodeURIComponent(`${m[1]},${m[2]}`);
+      }
+      // Si no se pudieron extraer coords del link, usar el link directo
+      return encodeURIComponent(e.mapsLink);
+    }
+    // 3. Si la dirección es genérica y no hay link, omitir esta parada del texto
+    if (dirGenerica) return null;
+    // 4. Usar dirección de texto normal
     return encodeURIComponent(e.direccion + ciudad);
   }
 
