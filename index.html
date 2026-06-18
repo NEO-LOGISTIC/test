@@ -4524,7 +4524,7 @@ function confirmarEntregaChofer() {
 function reprogramarEntregaChofer(id) {
   APP._reprogramarId = id;
   document.getElementById('reprog-motivo').value = '';
-  document.getElementById('modal-reprogramar').classList.remove('hidden');
+  document.getElementById('modal-reprogramar').style.display = 'flex';
 }
 
 function confirmarReprogramacion() {
@@ -4540,7 +4540,7 @@ function confirmarReprogramacion() {
   })
     .then(function() {
       toast('Entrega reprogramada', 'info');
-      cerrarModal('modal-reprogramar');
+      document.getElementById('modal-reprogramar').style.display = 'none';
       // Notificar al vendedor por WhatsApp
       if (e && e.vendedor) {
         const vend = APP.vendedores.find(function(v) { return v.nombre === e.vendedor; });
@@ -7042,11 +7042,11 @@ function guardarUbicacionChofer() {
 </script>
 
     <!-- Modal Reprogramar -->
-    <div id="modal-reprogramar" class="modal hidden">
+    <div id="modal-reprogramar" class="modal" style="display:none">
       <div class="modal-box" style="max-width:420px">
         <div class="modal-header">
           <h3>🔄 Reprogramar Entrega</h3>
-          <button class="modal-close" onclick="cerrarModal(&#39;modal-reprogramar&#39;)">✕</button>
+          <button class="modal-close" onclick="document.getElementById(&#39;modal-reprogramar&#39;).style.display=&#39;none&#39;">✕</button>
         </div>
         <div style="padding:20px">
           <p style="color:var(--white-dim);font-size:14px;margin-bottom:16px">
