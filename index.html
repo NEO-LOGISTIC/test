@@ -4558,8 +4558,9 @@ function confirmarReprogramacion() {
 }
 
 function reprogramarDesdeChofer() {
-  if (APP._entregaSeleccionada) reprogramarEntregaChofer(APP._entregaSeleccionada);
-  cerrarModal('modal-confirmar-entrega');
+  const id = APP._entregaSeleccionada; // guardar antes de cerrar modal (cerrarModal lo borra)
+  document.getElementById('modal-confirmar-entrega').classList.add('hidden'); // cerrar sin borrar _entregaSeleccionada
+  if (id) reprogramarEntregaChofer(id);
 }
 
 // ─── ACTUALIZAR RUTA/DASHBOARD PARA INCLUIR CHOFER ───────
