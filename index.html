@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#0A0F1E"/>
-<title>🧪 TEST — Neo Logistic</title>
+<title>Neo Logistic — Sistema de Entregas</title>
 
 <!-- SheetJS para leer/exportar Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -3083,6 +3083,19 @@ function rellenarFormulario(cliente) {
     onVendedorChange();
   }
   document.getElementById('f-obs').value       = cliente.observacion || '';
+
+  // Copiar coordenadas/link de Maps del cliente para que la ruta sea exacta
+  window._coordsActuales = cliente.coords || null;
+  const mlInp = document.getElementById('f-maps-link');
+  if (mlInp) {
+    mlInp.value = cliente.mapsLink || '';
+    if (cliente.mapsLink && typeof extraerCoordenadas === 'function') extraerCoordenadas();
+  }
+  // Si la dirección guardada es genérica ("a confirmar") pero hay coordenadas, mostrar coords ya
+  const dirField = document.getElementById('f-direccion');
+  if (dirField && cliente.coords && /^a\s*confirmar$/i.test((cliente.direccion||'').trim())) {
+    dirField.value = cliente.coords.lat.toFixed(6) + ',' + cliente.coords.lng.toFixed(6);
+  }
 }
 
 function cargarDesdeCliente() {
@@ -3092,8 +3105,17 @@ function cargarDesdeCliente() {
 
 // ─── GUARDAR ENTREGA ────────────────────────────────────────
 function guardarEntrega() {
-  const cliente   = document.getElementById('f-cliente').value.trim();
-  const direccion = document.getElementById('f-direccion').value.trim();
+  const cliente = document.getElementById('f-cliente').value.trim();
+  let direccion = document.getElementById('f-direccion').value.trim();
+
+  // Si hay coordenadas extraídas del link de Maps y la dirección está vacía
+  // o es un texto genérico tipo "a confirmar", usar las coordenadas como dirección
+  // para que la ruta del chofer sea exacta.
+  const dirGenerica = !direccion || /^a\s*confirmar$/i.test(direccion);
+  if (dirGenerica && window._coordsActuales) {
+    direccion = window._coordsActuales.lat.toFixed(6) + ',' + window._coordsActuales.lng.toFixed(6);
+    document.getElementById('f-direccion').value = direccion;
+  }
 
   if (!cliente || !direccion) {
     toast('Nombre de cliente y dirección son obligatorios', 'error');
@@ -3385,7 +3407,13 @@ function renderRuta() {
   const empty = document.getElementById('ruta-empty');
   lista.innerHTML = '';
 
-  const activas = APP.entregas.filter(e => e.estado === 'pending' || e.estado === 'transit');
+  const choferSelRuta = document.getElementById('ruta-chofer-sel');
+  const filtroRuta = choferSelRuta ? choferSelRuta.value : '';
+
+  let activas = APP.entregas.filter(e => e.estado === 'pending' || e.estado === 'transit');
+  if (filtroRuta) {
+    activas = activas.filter(e => e.chofer === filtroRuta || e.tecnico === filtroRuta);
+  }
 
   // Tiempo estimado
   const tiempoMin = calcularTiempoTotal(activas.length);
@@ -3622,7 +3650,10 @@ function abrirMaps(direccion) {
 
 // ─── WHATSAPP RUTA ─────────────────────────────────────────
 function abrirModalEnvioRuta() {
-  const activas = APP.entregas.filter(e => e.estado === 'pending' || e.estado === 'transit');
+  const choferSelRuta = document.getElementById('ruta-chofer-sel');
+  const filtroRuta = choferSelRuta ? choferSelRuta.value : '';
+  let activas = APP.entregas.filter(e => e.estado === 'pending' || e.estado === 'transit');
+  if (filtroRuta) activas = activas.filter(e => e.chofer === filtroRuta || e.tecnico === filtroRuta);
   if (activas.length === 0) {
     toast('No hay entregas para enviar', 'error');
     return;
@@ -5981,7 +6012,10 @@ function generarRutaChoferMaps() {
 
 // Override generarRutaGoogle (ruta del día) también con base
 function generarRutaGoogle() {
-  const activas = APP.entregas.filter(e => e.estado === 'pending' || e.estado === 'transit');
+  const choferSelRuta = document.getElementById('ruta-chofer-sel');
+  const filtroRuta = choferSelRuta ? choferSelRuta.value : '';
+  let activas = APP.entregas.filter(e => e.estado === 'pending' || e.estado === 'transit');
+  if (filtroRuta) activas = activas.filter(e => e.chofer === filtroRuta || e.tecnico === filtroRuta);
   if (activas.length === 0) { toast('No hay entregas pendientes', 'error'); return; }
   const url = generarURLMaps(activas, APP.config.direccionBase || DIR_BASE);
   if (!url) { toast('No hay paradas', 'error'); return; }
@@ -6344,6 +6378,7 @@ function onRutaDiaChoferChange() {
   APP.ruta.chofer = sel.value;
   APP.ruta.telefono = opt?.dataset?.wa || '';
   guardarStorage();
+  renderRuta();
 }
 
 
@@ -6712,10 +6747,21 @@ function guardarEdicionCliente() {
   if (!nombre) { toast('El nombre es obligatorio', 'error'); return; }
 
   const codigo = document.getElementById('ec-codigo').value.trim() || codigoOriginal;
+
+  // Si hay coordenadas extraídas del link de Maps y la dirección está vacía
+  // o es un texto genérico tipo "a confirmar", usar las coordenadas como dirección
+  // para que la ruta del chofer sea exacta.
+  let direccionCliente = document.getElementById('ec-direccion').value.trim();
+  const dirGenericaCliente = !direccionCliente || /^a\s*confirmar$/i.test(direccionCliente);
+  if (dirGenericaCliente && window._ecCoordsActuales) {
+    direccionCliente = window._ecCoordsActuales.lat.toFixed(6) + ',' + window._ecCoordsActuales.lng.toFixed(6);
+    document.getElementById('ec-direccion').value = direccionCliente;
+  }
+
   const datos = {
     codigo,
     nombre,
-    direccion:   document.getElementById('ec-direccion').value.trim(),
+    direccion:   direccionCliente,
     telefono:    document.getElementById('ec-telefono').value.trim(),
     zona:        document.getElementById('ec-zona').value.trim(),
     vendedor:    document.getElementById('ec-vendedor').value.trim(),
