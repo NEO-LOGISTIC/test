@@ -3321,7 +3321,6 @@ function renderEntregas(filtro = '', estadoFiltro = '', rangoFecha = null) {
   if (estadoFiltro) {
     lista = lista.filter(e => e.estado === estadoFiltro);
   }
-  // Filtro de fecha: pendientes/en camino SIEMPRE visibles; completadas se filtran
   if (rangoFecha) {
     lista = lista.filter(e => entregaEnRangoFecha(e, rangoFecha));
   }
@@ -3360,7 +3359,6 @@ function onFiltroFechaChange() {
   const customDiv = document.getElementById('filtro-fechas-custom');
   if (val === 'personalizado') {
     customDiv.style.display = 'flex';
-    // Setear fechas por defecto si están vacías
     const hoy = new Date().toISOString().slice(0,10);
     if (!document.getElementById('fecha-desde').value) document.getElementById('fecha-desde').value = hoy;
     if (!document.getElementById('fecha-hasta').value) document.getElementById('fecha-hasta').value = hoy;
@@ -3371,28 +3369,22 @@ function onFiltroFechaChange() {
 }
 
 function getFiltroFechaRango() {
-  // Retorna {desde, hasta} como strings YYYY-MM-DD, o null para "sin filtro de fecha"
-  const val = document.getElementById('filter-fecha') ? document.getElementById('filter-fecha').value : 'hoy';
+  const sel = document.getElementById('filter-fecha');
+  const val = sel ? sel.value : 'todas';
   const hoy = new Date();
   const yyyy = hoy.getFullYear();
   const mm = String(hoy.getMonth()+1).padStart(2,'0');
   const dd = String(hoy.getDate()).padStart(2,'0');
   const hoyStr = yyyy+'-'+mm+'-'+dd;
-
   if (val === 'todas') return null;
   if (val === 'hoy') return { desde: hoyStr, hasta: hoyStr };
   if (val === 'semana') {
-    const dow = hoy.getDay(); // 0=dom
+    const dow = hoy.getDay();
     const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - ((dow+6)%7));
     const domingo = new Date(lunes); domingo.setDate(lunes.getDate()+6);
-    return {
-      desde: lunes.toISOString().slice(0,10),
-      hasta: domingo.toISOString().slice(0,10)
-    };
+    return { desde: lunes.toISOString().slice(0,10), hasta: domingo.toISOString().slice(0,10) };
   }
-  if (val === 'mes') {
-    return { desde: yyyy+'-'+mm+'-01', hasta: hoyStr };
-  }
+  if (val === 'mes') return { desde: yyyy+'-'+mm+'-01', hasta: hoyStr };
   if (val === 'personalizado') {
     const desde = document.getElementById('fecha-desde').value;
     const hasta = document.getElementById('fecha-hasta').value;
@@ -3403,14 +3395,10 @@ function getFiltroFechaRango() {
 }
 
 function entregaEnRangoFecha(e, rango) {
-  // Si no hay rango, no filtrar
   if (!rango) return true;
-  // Pendientes SIEMPRE se muestran sin importar fecha (para no perder ninguna)
   if (e.estado === 'pending' || e.estado === 'transit') return true;
-  // Para completadas/entregadas/reprogramadas: filtrar por fecha
   const fechaE = e.fecha || e.fechaCreacion || e.createdAt || '';
-  if (!fechaE) return true; // sin fecha = mostrar igual
-  // Normalizar: puede venir como timestamp número o string YYYY-MM-DD
+  if (!fechaE) return true;
   let fechaStr = '';
   if (typeof fechaE === 'number') {
     fechaStr = new Date(fechaE).toISOString().slice(0,10);
