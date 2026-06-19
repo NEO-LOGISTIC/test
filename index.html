@@ -1367,7 +1367,7 @@ html { -webkit-text-size-adjust: 100%; }
       <div class="page" id="page-entregas">
         <div class="section-head">
           <h2>Entregas del Día <small>Gestión completa de entregas</small></h2>
-          <div class="flex gap-2">
+          <div class="flex gap-2" style="flex-wrap:wrap;align-items:center">
             <div class="search-bar">
               <svg width="14" height="14" viewBox="0 0 20 20" fill="var(--white-faint)"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
               <input type="text" id="search-entregas" placeholder="Buscar cliente, código, dirección..." oninput="filtrarEntregas()">
@@ -1379,6 +1379,18 @@ html { -webkit-text-size-adjust: 100%; }
               <option value="delivered">Entregado</option>
               <option value="rescheduled">Reprogramado</option>
             </select>
+            <select id="filter-fecha" onchange="onFiltroFechaChange()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13px;padding:8px 12px;outline:none;cursor:pointer">
+              <option value="todas">📅 Todas las fechas</option>
+              <option value="hoy" selected>📅 Hoy</option>
+              <option value="semana">📅 Esta semana</option>
+              <option value="mes">📅 Este mes</option>
+              <option value="personalizado">📅 Período...</option>
+            </select>
+            <div id="filtro-fechas-custom" style="display:none;gap:6px;align-items:center">
+              <input type="date" id="fecha-desde" onchange="filtrarEntregas()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13px;padding:7px 10px;outline:none">
+              <span style="color:var(--white-dim);font-size:12px">→</span>
+              <input type="date" id="fecha-hasta" onchange="filtrarEntregas()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13px;padding:7px 10px;outline:none">
+            </div>
           </div>
         </div>
 
@@ -3278,7 +3290,7 @@ function renderDashboard() {
 }
 
 // ─── RENDER ENTREGAS ───────────────────────────────────────
-function renderEntregas(filtro = '', estadoFiltro = '') {
+function renderEntregas(filtro = '', estadoFiltro = '', rangoFecha = null) {
   const tbody = document.getElementById('entregas-tbody');
   const empty = document.getElementById('entregas-empty');
   tbody.innerHTML = '';
@@ -3308,6 +3320,10 @@ function renderEntregas(filtro = '', estadoFiltro = '') {
   }
   if (estadoFiltro) {
     lista = lista.filter(e => e.estado === estadoFiltro);
+  }
+  // Filtro de fecha: pendientes/en camino SIEMPRE visibles; completadas se filtran
+  if (rangoFecha) {
+    lista = lista.filter(e => entregaEnRangoFecha(e, rangoFecha));
   }
 
   if (lista.length === 0) {
@@ -3339,10 +3355,77 @@ function renderEntregas(filtro = '', estadoFiltro = '') {
   });
 }
 
+function onFiltroFechaChange() {
+  const val = document.getElementById('filter-fecha').value;
+  const customDiv = document.getElementById('filtro-fechas-custom');
+  if (val === 'personalizado') {
+    customDiv.style.display = 'flex';
+    // Setear fechas por defecto si están vacías
+    const hoy = new Date().toISOString().slice(0,10);
+    if (!document.getElementById('fecha-desde').value) document.getElementById('fecha-desde').value = hoy;
+    if (!document.getElementById('fecha-hasta').value) document.getElementById('fecha-hasta').value = hoy;
+  } else {
+    customDiv.style.display = 'none';
+  }
+  filtrarEntregas();
+}
+
+function getFiltroFechaRango() {
+  // Retorna {desde, hasta} como strings YYYY-MM-DD, o null para "sin filtro de fecha"
+  const val = document.getElementById('filter-fecha') ? document.getElementById('filter-fecha').value : 'hoy';
+  const hoy = new Date();
+  const yyyy = hoy.getFullYear();
+  const mm = String(hoy.getMonth()+1).padStart(2,'0');
+  const dd = String(hoy.getDate()).padStart(2,'0');
+  const hoyStr = yyyy+'-'+mm+'-'+dd;
+
+  if (val === 'todas') return null;
+  if (val === 'hoy') return { desde: hoyStr, hasta: hoyStr };
+  if (val === 'semana') {
+    const dow = hoy.getDay(); // 0=dom
+    const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - ((dow+6)%7));
+    const domingo = new Date(lunes); domingo.setDate(lunes.getDate()+6);
+    return {
+      desde: lunes.toISOString().slice(0,10),
+      hasta: domingo.toISOString().slice(0,10)
+    };
+  }
+  if (val === 'mes') {
+    return { desde: yyyy+'-'+mm+'-01', hasta: hoyStr };
+  }
+  if (val === 'personalizado') {
+    const desde = document.getElementById('fecha-desde').value;
+    const hasta = document.getElementById('fecha-hasta').value;
+    if (!desde || !hasta) return null;
+    return { desde, hasta };
+  }
+  return null;
+}
+
+function entregaEnRangoFecha(e, rango) {
+  // Si no hay rango, no filtrar
+  if (!rango) return true;
+  // Pendientes SIEMPRE se muestran sin importar fecha (para no perder ninguna)
+  if (e.estado === 'pending' || e.estado === 'transit') return true;
+  // Para completadas/entregadas/reprogramadas: filtrar por fecha
+  const fechaE = e.fecha || e.fechaCreacion || e.createdAt || '';
+  if (!fechaE) return true; // sin fecha = mostrar igual
+  // Normalizar: puede venir como timestamp número o string YYYY-MM-DD
+  let fechaStr = '';
+  if (typeof fechaE === 'number') {
+    fechaStr = new Date(fechaE).toISOString().slice(0,10);
+  } else if (typeof fechaE === 'string') {
+    fechaStr = fechaE.slice(0,10);
+  }
+  if (!fechaStr) return true;
+  return fechaStr >= rango.desde && fechaStr <= rango.hasta;
+}
+
 function filtrarEntregas() {
   const filtro = document.getElementById('search-entregas').value;
   const estado = document.getElementById('filter-estado').value;
-  renderEntregas(filtro, estado);
+  const rango = getFiltroFechaRango();
+  renderEntregas(filtro, estado, rango);
 }
 
 // ─── RENDER CLIENTES ───────────────────────────────────────
@@ -7048,7 +7131,7 @@ function guardarUbicacionChofer() {
 
 
     <!-- Modal Reprogramar -->
-    <div id="modal-reprogramar" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
+    <div id="modal-reprogramar" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;">
       <div class="modal-box" style="max-width:420px;background:var(--bg-card);border-radius:var(--radius);padding:0;width:90%">
         <div class="modal-header">
           <h3>🔄 Reprogramar Entrega</h3>
@@ -7065,20 +7148,6 @@ function guardarUbicacionChofer() {
           </div>
           <div style="display:flex;gap:10px;justify-content:flex-end">
             <button class="btn btn-ghost" onclick="document.getElementById('modal-reprogramar').style.display='none'">Cancelar</button>
-            <button class="btn btn-primary" onclick="confirmarReprogramacion()">🔄 Confirmar</button>
-          </div>
-        </div>
-      </div>
-    </div>x">
-            Indicá el motivo por el cual no se pudo realizar la entrega hoy.
-          </p>
-          <div class="form-group" style="margin-bottom:16px">
-            <label style="font-weight:600;margin-bottom:8px;display:block">Motivo de reprogramación *</label>
-            <textarea id="reprog-motivo" rows="3" placeholder="Ej: Cliente ausente, dirección cerrada, problema con el producto..."
-              style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:14px;padding:10px 12px;resize:vertical;outline:none"></textarea>
-          </div>
-          <div style="display:flex;gap:10px;justify-content:flex-end">
-            <button class="btn btn-ghost" onclick="cerrarModal(&#39;modal-reprogramar&#39;)">Cancelar</button>
             <button class="btn btn-primary" onclick="confirmarReprogramacion()">🔄 Confirmar Reprogramación</button>
           </div>
         </div>
