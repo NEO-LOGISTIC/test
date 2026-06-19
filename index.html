@@ -4523,9 +4523,11 @@ function confirmarEntregaChofer() {
 
 function reprogramarEntregaChofer(id) {
   APP._reprogramarId = id;
-  document.getElementById('reprog-motivo').value = '';
+  // Mover el modal al body para que no quede atrapado en ningún contenedor
   const m = document.getElementById('modal-reprogramar');
-  m.style.cssText = 'display:flex !important;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:99999;align-items:center;justify-content:center;';
+  document.body.appendChild(m);
+  document.getElementById('reprog-motivo').value = '';
+  m.style.cssText = 'display:flex !important;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;';
 }
 
 function confirmarReprogramacion() {
