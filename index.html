@@ -2280,7 +2280,7 @@ html { -webkit-text-size-adjust: 100%; }
       <button class="btn btn-yellow" onclick="cambiarEstado('pending')">⏳ Pendiente</button>
       <button class="btn" style="background:var(--blue);color:#fff" onclick="cambiarEstado('transit')">🚚 En Camino</button>
       <button class="btn btn-green" onclick="cambiarEstado('delivered')">✅ Entregado</button>
-      <button class="btn btn-red" onclick="cambiarEstado('rescheduled')">🔄 Reprogramado</button>
+      <button class="btn btn-red" onclick="(function(){var id=APP._entregaSeleccionada;cerrarModal('modal-estado');reprogramarEntregaChofer(id);})()">🔄 Reprogramado</button>
       <button class="btn" style="background:#7C3AED;color:#fff" onclick="cambiarEstado('asistido')" id="btn-asistido">🛠️ Asistido</button>
       <button class="btn" style="background:var(--blue-dark);color:#fff" onclick="cambiarEstado('retirado')" id="btn-retirado">📦 Retirado</button>
       <button class="btn" style="background:#00A870;color:#fff" onclick="cobradoSinAviso()" id="btn-cobrado">💰 Cobrado</button>
@@ -4594,16 +4594,52 @@ function confirmarEntregaChofer() {
 
 function reprogramarEntregaChofer(id) {
   APP._reprogramarId = id;
-  // Mover el modal al body para que no quede atrapado en ningún contenedor
-  const m = document.getElementById('modal-reprogramar');
-  document.body.appendChild(m);
-  document.getElementById('reprog-motivo').value = '';
-  m.style.cssText = 'display:flex !important;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;';
+  // Eliminar overlay anterior si existe
+  const old = document.getElementById('overlay-reprogramar');
+  if (old) old.remove();
+  // Crear overlay dinámico — inmune al re-render de Firebase
+  const overlay = document.createElement('div');
+  overlay.id = 'overlay-reprogramar';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  overlay.innerHTML = `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-width:420px;width:90%;padding:0;box-shadow:0 8px 32px #00000080">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <h3 style="font-family:var(--font-display);font-size:17px;font-weight:700;margin:0">🔄 Reprogramar Entrega</h3>
+        <button onclick="cerrarReprogramar()" style="background:none;border:none;color:var(--white-dim);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">✕</button>
+      </div>
+      <div style="padding:20px">
+        <p style="color:var(--white-dim);font-size:14px;margin-bottom:16px">
+          Indicá el motivo por el cual no se pudo realizar la entrega hoy.
+        </p>
+        <div style="margin-bottom:16px">
+          <label style="font-weight:600;margin-bottom:8px;display:block;font-size:13px">Motivo de reprogramación *</label>
+          <textarea id="reprog-motivo-dyn" rows="4" placeholder="Ej: Cliente ausente, dirección cerrada, problema con el producto..."
+            style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:14px;padding:10px 12px;resize:vertical;outline:none;box-sizing:border-box"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button onclick="cerrarReprogramar()" style="background:transparent;border:1px solid var(--border);color:var(--white-dim);padding:9px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13.5px;font-weight:600;cursor:pointer">Cancelar</button>
+          <button onclick="confirmarReprogramacion()" style="background:var(--blue);color:#fff;border:none;padding:9px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13.5px;font-weight:600;cursor:pointer">🔄 Confirmar</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  // Focus en el textarea
+  setTimeout(function() {
+    const ta = document.getElementById('reprog-motivo-dyn');
+    if (ta) ta.focus();
+  }, 50);
+}
+
+function cerrarReprogramar() {
+  const overlay = document.getElementById('overlay-reprogramar');
+  if (overlay) overlay.remove();
 }
 
 function confirmarReprogramacion() {
   const id = APP._reprogramarId;
-  const motivo = document.getElementById('reprog-motivo').value.trim();
+  // Leer del textarea dinámico (nuevo) o del estático (fallback)
+  const taEl = document.getElementById('reprog-motivo-dyn') || document.getElementById('reprog-motivo');
+  const motivo = taEl ? taEl.value.trim() : '';
   if (!motivo) { toast('Ingresá el motivo de reprogramación', 'error'); return; }
   const e = APP.entregas.find(function(x) { return x.id === id; });
   const obsAnterior = e && e.obs ? e.obs + ' | ' : '';
@@ -4614,7 +4650,7 @@ function confirmarReprogramacion() {
   })
     .then(function() {
       toast('Entrega reprogramada', 'info');
-      document.getElementById('modal-reprogramar').style.display = 'none';
+      cerrarReprogramar();
       // Notificar al vendedor por WhatsApp
       if (e && e.vendedor) {
         const vend = APP.vendedores.find(function(v) { return v.nombre === e.vendedor; });
