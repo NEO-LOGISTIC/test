@@ -1150,7 +1150,7 @@ html { -webkit-text-size-adjust: 100%; }
           </svg>
         </div>
         <div>
-          <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:16px;letter-spacing:-.5px;line-height:1;color:#F5F7FF">
+          <div id="sidebar-empresa-nombre" style="font-family:'Sora',sans-serif;font-weight:800;font-size:16px;letter-spacing:-.5px;line-height:1;color:#F5F7FF">
             NEO<span style="color:#4D8FFF">LOGISTIC</span>
           </div>
           <div style="font-size:9.5px;color:#4D8FFF;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;font-weight:600">
@@ -2122,8 +2122,8 @@ html { -webkit-text-size-adjust: 100%; }
             <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:16px">🏢 Datos del Negocio</div>
             <div class="form-grid" style="grid-template-columns:1fr">
               <div class="form-group">
-                <label>Nombre empresa</label>
-                <input type="text" id="cfg-empresa" placeholder="Tu empresa" oninput="guardarConfigNegocio()">
+                <label>Nombre empresa (aparece en sidebar y mensajes WA)</label>
+                <input type="text" id="cfg-empresa" placeholder="Ej: Neo Logistic" oninput="guardarConfigNegocio()">
               </div>
               <div class="form-group">
                 <label>Ciudad base</label>
@@ -2133,7 +2133,54 @@ html { -webkit-text-size-adjust: 100%; }
                 <label>WhatsApp empresa</label>
                 <input type="text" id="cfg-wa" placeholder="+595 981 000000" oninput="guardarConfigNegocio()">
               </div>
+              <div class="form-group">
+                <label>Logo URL (imagen online, opcional)</label>
+                <input type="text" id="cfg-logo" placeholder="https://... (link a imagen PNG/JPG)" oninput="guardarConfigNegocio()">
+                <div style="margin-top:8px;display:flex;gap:10px;align-items:center">
+                  <div id="cfg-logo-preview" style="display:none;width:44px;height:44px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">
+                    <img id="cfg-logo-img" style="width:100%;height:100%;object-fit:cover">
+                  </div>
+                  <span style="font-size:11px;color:var(--white-faint)">Aparece en el sidebar reemplazando el ícono hexagonal</span>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Apariencia / Themes -->
+          <div class="card">
+            <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:16px">🎨 Apariencia</div>
+            <p style="font-size:13px;color:var(--white-dim);margin-bottom:14px">Elegí el estilo visual de la aplicación:</p>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div onclick="aplicarTheme('default')" id="theme-opt-default" style="cursor:pointer;padding:12px 14px;border-radius:var(--radius-sm);border:2px solid var(--blue);background:var(--blue-glow);display:flex;align-items:center;gap:12px">
+                <div style="width:32px;height:32px;border-radius:6px;background:linear-gradient(135deg,#080D1A,#0F1729);border:1px solid #1E6FFF;flex-shrink:0"></div>
+                <div>
+                  <div style="font-weight:700;font-size:13px">⚡ Neo Dark <span style="background:var(--blue);color:#fff;font-size:10px;padding:1px 6px;border-radius:99px;margin-left:4px">ACTUAL</span></div>
+                  <div style="font-size:11px;color:var(--white-dim)">Azul eléctrico sobre fondo oscuro profundo</div>
+                </div>
+              </div>
+              <div onclick="aplicarTheme('minimalista')" id="theme-opt-minimalista" style="cursor:pointer;padding:12px 14px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg-input);display:flex;align-items:center;gap:12px">
+                <div style="width:32px;height:32px;border-radius:6px;background:linear-gradient(135deg,#0D1117,#161B22);border:1px solid #30363D;flex-shrink:0"></div>
+                <div>
+                  <div style="font-weight:700;font-size:13px">🖤 Minimalista</div>
+                  <div style="font-size:11px;color:var(--white-dim)">Negro puro, bordes sutiles, tipografía limpia</div>
+                </div>
+              </div>
+              <div onclick="aplicarTheme('ejecutivo')" id="theme-opt-ejecutivo" style="cursor:pointer;padding:12px 14px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg-input);display:flex;align-items:center;gap:12px">
+                <div style="width:32px;height:32px;border-radius:6px;background:linear-gradient(135deg,#0A1628,#112240);border:1px solid #C9A84C;flex-shrink:0"></div>
+                <div>
+                  <div style="font-weight:700;font-size:13px">🏛️ Ejecutivo</div>
+                  <div style="font-size:11px;color:var(--white-dim)">Azul marino profundo con acentos dorados</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Gestión de Usuarios -->
+          <div class="card">
+            <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:16px">👥 Gestión de Usuarios</div>
+            <p style="font-size:13px;color:var(--white-dim);margin-bottom:14px">Usuarios con acceso al sistema. Los cambios se guardan en Firebase.</p>
+            <div id="cfg-usuarios-lista" style="margin-bottom:14px;max-height:220px;overflow-y:auto"></div>
+            <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoUsuario()">➕ Nuevo usuario</button>
           </div>
 
           <!-- Limpiar datos -->
@@ -2834,10 +2881,19 @@ function restaurarCamposConfig() {
   if (cfg.empresa) document.getElementById('cfg-empresa').value = cfg.empresa;
   if (cfg.ciudad)  document.getElementById('cfg-ciudad').value  = cfg.ciudad;
   if (cfg.whatsapp) document.getElementById('cfg-wa').value = cfg.whatsapp;
+  if (cfg.logo) { const l = document.getElementById('cfg-logo'); if(l) l.value = cfg.logo; }
   const rc = document.getElementById('ruta-chofer');
   const rt = document.getElementById('ruta-tel');
   if (rc && APP.ruta && APP.ruta.chofer)   rc.value = APP.ruta.chofer;
   if (rt && APP.ruta && APP.ruta.telefono) rt.value = APP.ruta.telefono;
+  // Aplicar nombre/logo y theme
+  aplicarNombreYLogo();
+  if (cfg.theme) aplicarTheme(cfg.theme);
+  // Cargar usuarios adicionales desde Firebase
+  db.ref('usuarios_config').once('value', snap => {
+    const data = snap.val() || {};
+    Object.entries(data).forEach(([pin, u]) => { USUARIOS[pin] = u; });
+  });
 }
 
 // ─── GUARDAR EN FIREBASE ───────────────────────────────────
@@ -2975,7 +3031,11 @@ function navigate(page) {
 
   document.getElementById('topbar-page-title').textContent = PAGE_TITLES[page] || page;
   // Update rol badge
-  const rb = document.getElementById('rol-badge'); if(rb && APP._rol) rb.textContent = APP._rol === 'admin' ? '👑 Admin' : '👤 Vendedor';
+  const rb = document.getElementById('rol-badge');
+  if (rb && APP._rol) {
+    const _rl = {admin:'👑 Admin', editor:'✏️ Editor', vendedor:'👤 Vendedor', chofer:'🚚 Chofer', tecnico:'🛠️ Técnico', compras_cobranzas:'💰 Cobranzas', invitado:'👁️ Demo'}[APP._rol] || APP._rol;
+    rb.textContent = _rl;
+  }
 
   // Re-renderizar según la página
   if (page === 'dashboard')   renderDashboard();
@@ -2988,6 +3048,7 @@ function navigate(page) {
   if (page === 'choferes')    renderChoferes();
   if (page === 'estadisticas') setTimeout(renderEstadisticas, 150);
   if (page === 'rutachofer')  { poblarSelectoresChofer(); renderRutaChofer(); }
+  if (page === 'config')      { renderCfgUsuarios(); }
 
   closeSidebar();
   window.scrollTo(0,0);
@@ -3819,13 +3880,226 @@ function updateConfig(key, val) {
 }
 
 function guardarConfigNegocio() {
+  const logoUrl = document.getElementById('cfg-logo')?.value.trim() || '';
   const cfg = {
-    empresa:  document.getElementById('cfg-empresa').value,
-    ciudad:   document.getElementById('cfg-ciudad').value,
-    whatsapp: document.getElementById('cfg-wa').value
+    empresa:  document.getElementById('cfg-empresa').value.trim(),
+    ciudad:   document.getElementById('cfg-ciudad').value.trim(),
+    whatsapp: document.getElementById('cfg-wa').value.trim(),
+    logo:     logoUrl
   };
   APP.config = { ...APP.config, ...cfg };
   fbGuardarConfig(cfg);
+  // Actualizar nombre en sidebar en tiempo real
+  aplicarNombreYLogo();
+}
+
+function aplicarNombreYLogo() {
+  const empresa = APP.config.empresa;
+  const logo    = APP.config.logo;
+  const logoUrl = logo || '';
+  // Sidebar nombre
+  const el = document.getElementById('sidebar-empresa-nombre');
+  if (el && empresa) {
+    el.textContent = empresa;
+    el.style.fontSize = empresa.length > 12 ? '13px' : '16px';
+  }
+  // Logo preview en config
+  const prev = document.getElementById('cfg-logo-preview');
+  const img  = document.getElementById('cfg-logo-img');
+  if (prev && img) {
+    if (logoUrl) {
+      img.src = logoUrl;
+      prev.style.display = 'block';
+    } else {
+      prev.style.display = 'none';
+    }
+  }
+  // Logo en sidebar icon (reemplaza SVG)
+  const logoIcon = document.querySelector('#sidebar-logo .logo-icon');
+  if (logoIcon && logoUrl) {
+    logoIcon.innerHTML = `<img src="${logoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
+  } else if (logoIcon && !logoUrl) {
+    // restaurar SVG original si se borró el logo
+    logoIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M3 8L12 3L21 8V16L12 21L3 16V8Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M12 3V12M12 12L21 8M12 12L3 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="2" fill="#fff"/></svg>`;
+  }
+}
+
+// ─── THEMES ───────────────────────────────────────────────
+
+const THEMES = {
+  default: {
+    '--bg-deep':      '#080D1A',
+    '--bg-card':      '#0F1729',
+    '--bg-card2':     '#141E35',
+    '--bg-input':     '#0A1220',
+    '--border':       '#1A2740',
+    '--border-bright':'#1E6FFF40',
+    '--blue':         '#1E6FFF',
+    '--blue-light':   '#4D8FFF',
+    '--blue-glow':    '#1E6FFF22',
+    '--blue-dark':    '#0A3BAA',
+    '--white':        '#F5F7FF',
+    '--white-dim':    '#8A95B0',
+    '--white-faint':  '#3A4560',
+    '--yellow':       '#FFB800',
+    '--green':        '#00D68F',
+    '--red':          '#FF4560'
+  },
+  minimalista: {
+    '--bg-deep':      '#0D1117',
+    '--bg-card':      '#161B22',
+    '--bg-card2':     '#1C2128',
+    '--bg-input':     '#0D1117',
+    '--border':       '#30363D',
+    '--border-bright':'#58A6FF40',
+    '--blue':         '#58A6FF',
+    '--blue-light':   '#79C0FF',
+    '--blue-glow':    '#58A6FF18',
+    '--blue-dark':    '#1F6FEB',
+    '--white':        '#E6EDF3',
+    '--white-dim':    '#8B949E',
+    '--white-faint':  '#484F58',
+    '--yellow':       '#E3B341',
+    '--green':        '#3FB950',
+    '--red':          '#F85149'
+  },
+  ejecutivo: {
+    '--bg-deep':      '#060C18',
+    '--bg-card':      '#0A1628',
+    '--bg-card2':     '#0E1E36',
+    '--bg-input':     '#071020',
+    '--border':       '#1A2E4A',
+    '--border-bright':'#C9A84C40',
+    '--blue':         '#C9A84C',
+    '--blue-light':   '#E2C97E',
+    '--blue-glow':    '#C9A84C18',
+    '--blue-dark':    '#8B6914',
+    '--white':        '#F0EAD6',
+    '--white-dim':    '#9A8E6E',
+    '--white-faint':  '#3D3520',
+    '--yellow':       '#E2C97E',
+    '--green':        '#4CAF7A',
+    '--red':          '#E05252'
+  }
+};
+
+function aplicarTheme(nombre) {
+  const theme = THEMES[nombre];
+  if (!theme) return;
+  const root = document.documentElement;
+  Object.entries(theme).forEach(([k, v]) => root.style.setProperty(k, v));
+  // Marcar opción activa
+  ['default','minimalista','ejecutivo'].forEach(t => {
+    const el = document.getElementById('theme-opt-' + t);
+    if (!el) return;
+    if (t === nombre) {
+      el.style.border = '2px solid var(--blue)';
+      el.style.background = 'var(--blue-glow)';
+    } else {
+      el.style.border = '2px solid var(--border)';
+      el.style.background = 'var(--bg-input)';
+    }
+  });
+  APP.config.theme = nombre;
+  fbGuardarConfig({ theme: nombre });
+  toast('🎨 Tema "' + nombre + '" aplicado', 'success');
+}
+
+// ─── GESTIÓN DE USUARIOS ──────────────────────────────────
+
+function renderCfgUsuarios() {
+  const el = document.getElementById('cfg-usuarios-lista');
+  if (!el) return;
+  // Cargar desde Firebase
+  db.ref('usuarios_config').once('value', snap => {
+    const data = snap.val() || {};
+    // Combinar con USUARIOS base (solo mostrar, no editar base)
+    const todos = Object.entries(data);
+    if (todos.length === 0) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--white-faint);padding:8px 0">No hay usuarios adicionales. Los usuarios base están en el código.</div>';
+      return;
+    }
+    el.innerHTML = todos.map(([pin, u]) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dark));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${(u.nombre||'?').charAt(0).toUpperCase()}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600">${u.nombre}</div>
+          <div style="font-size:11px;color:var(--white-dim)">PIN: ${pin} · ${({admin:'👑 Admin',vendedor:'👤 Vendedor',chofer:'🚚 Chofer',tecnico:'🛠️ Técnico',compras_cobranzas:'💰 Cobranzas'}[u.rol]||u.rol)}</div>
+        </div>
+        <button onclick="eliminarUsuarioCfg('${pin}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
+      </div>`).join('');
+  });
+}
+
+function abrirModalNuevoUsuario() {
+  const overlay = document.getElementById('overlay-nuevo-usuario');
+  if (overlay) overlay.remove();
+  const ov = document.createElement('div');
+  ov.id = 'overlay-nuevo-usuario';
+  ov.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  ov.innerHTML = `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-width:400px;width:90%;padding:0">
+      <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;margin:0">👤 Nuevo Usuario</h3>
+        <button onclick="document.getElementById('overlay-nuevo-usuario').remove()" style="background:none;border:none;color:var(--white-dim);font-size:20px;cursor:pointer">✕</button>
+      </div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div class="form-group">
+          <label>Nombre completo *</label>
+          <input type="text" id="nu-nombre" placeholder="Ej: Juan Pérez">
+        </div>
+        <div class="form-group">
+          <label>PIN de acceso (4 dígitos) *</label>
+          <input type="text" id="nu-pin" placeholder="Ej: 6789" maxlength="4" pattern="[0-9]{4}">
+        </div>
+        <div class="form-group">
+          <label>Rol</label>
+          <select id="nu-rol" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13.5px;padding:9px 12px;outline:none;width:100%">
+            <option value="admin">👑 Administrador</option>
+            <option value="vendedor" selected>👤 Vendedor</option>
+            <option value="chofer">🚚 Chofer</option>
+            <option value="tecnico">🛠️ Técnico</option>
+            <option value="compras_cobranzas">💰 Compras y Cobranzas</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+          <button onclick="document.getElementById('overlay-nuevo-usuario').remove()" style="background:transparent;border:1px solid var(--border);color:var(--white-dim);padding:9px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer">Cancelar</button>
+          <button onclick="guardarNuevoUsuario()" style="background:var(--blue);color:#fff;border:none;padding:9px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer">💾 Guardar</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  setTimeout(() => document.getElementById('nu-nombre')?.focus(), 50);
+}
+
+function guardarNuevoUsuario() {
+  const nombre = document.getElementById('nu-nombre')?.value.trim();
+  const pin    = document.getElementById('nu-pin')?.value.trim();
+  const rol    = document.getElementById('nu-rol')?.value;
+  if (!nombre || !pin) { toast('Nombre y PIN son obligatorios', 'error'); return; }
+  if (!/^\d{4}$/.test(pin)) { toast('El PIN debe ser 4 dígitos numéricos', 'error'); return; }
+  // Verificar que el PIN no esté en uso
+  if (USUARIOS[pin]) { toast('Ese PIN ya está en uso por ' + USUARIOS[pin].nombre, 'error'); return; }
+  const datos = { nombre, rol, tipo: rol, id: rol + '_' + Date.now() };
+  db.ref('usuarios_config/' + pin).set(datos).then(() => {
+    toast(`✅ Usuario "${nombre}" creado con PIN ${pin}`, 'success');
+    document.getElementById('overlay-nuevo-usuario')?.remove();
+    renderCfgUsuarios();
+    // Agregar al mapa de USUARIOS en memoria para esta sesión
+    USUARIOS[pin] = datos;
+  }).catch(() => toast('Error al guardar usuario', 'error'));
+}
+
+function eliminarUsuarioCfg(pin) {
+  if (!confirm('¿Eliminar este usuario?')) return;
+  db.ref('usuarios_config/' + pin).remove().then(() => {
+    delete USUARIOS[pin];
+    toast('Usuario eliminado', 'info');
+    renderCfgUsuarios();
+  });
 }
 
 function limpiarEntregasHoy() {
