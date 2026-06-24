@@ -1068,6 +1068,40 @@ html { -webkit-text-size-adjust: 100%; }
 }
 .page { padding-top: 0; }
 
+/* ─── ENTREGAS CARD MÓVIL ───────────────────────────── */
+.entrega-card-mobile {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.entrega-card-mobile.pendiente { border-left: 3px solid var(--yellow); }
+.entrega-card-mobile.transit   { border-left: 3px solid var(--blue); }
+.entrega-card-mobile.done      { border-left: 3px solid var(--green); opacity: .8; }
+.entrega-card-mobile.reprog    { border-left: 3px solid var(--red); }
+
+.ec-header { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:8px; }
+.ec-cliente { font-weight:700; font-size:15px; line-height:1.2; flex:1; }
+.ec-badges  { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex-shrink:0; }
+.ec-meta    { font-size:11.5px; color:var(--white-dim); margin-bottom:4px; display:flex; align-items:center; gap:5px; }
+.ec-fecha   { font-size:11px; font-weight:600; padding:2px 8px; border-radius:99px; display:inline-block; margin-bottom:8px; }
+.ec-fecha.hoy   { background:var(--green-bg); color:var(--green); }
+.ec-fecha.reciente { background:var(--yellow-bg); color:var(--yellow); }
+.ec-fecha.vieja    { background:var(--red-bg); color:var(--red); }
+.ec-actions { display:flex; gap:8px; margin-top:10px; }
+.ec-actions .btn-accion { flex:1; min-height:44px; font-size:14px; font-weight:700; border-radius:var(--radius-sm); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
+.ec-actions .btn-maps   { background:var(--bg-input); border:1px solid var(--border); color:var(--white-dim); border-radius:var(--radius-sm); padding:0 12px; min-height:44px; cursor:pointer; font-size:14px; }
+.ec-actions .btn-del    { background:var(--red-bg); border:1px solid var(--red)40; color:var(--red); border-radius:var(--radius-sm); padding:0 10px; min-height:44px; cursor:pointer; font-size:14px; }
+
+/* Solo mostrar cards en móvil, tabla en desktop */
+.entregas-mobile-view  { display:none; }
+.entregas-desktop-view { display:block; }
+@media (max-width: 768px) {
+  .entregas-mobile-view  { display:block; }
+  .entregas-desktop-view { display:none; }
+}
+
 </style>
 </head>
 <body>
@@ -1383,7 +1417,8 @@ html { -webkit-text-size-adjust: 100%; }
           </div>
         </div>
 
-        <div class="card">
+        <!-- Vista desktop: tabla -->
+        <div class="card entregas-desktop-view">
           <div class="table-wrap">
             <table id="entregas-table">
               <thead>
@@ -1396,12 +1431,22 @@ html { -webkit-text-size-adjust: 100%; }
                   <th class="col-hide-mobile">Vendedor</th>
                   <th class="col-hide-mobile">Teléfono</th>
                   <th>Estado</th>
+                  <th>Cargado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="entregas-tbody"></tbody>
             </table>
           </div>
+          <div class="empty-state hidden" id="entregas-empty-desk">
+            <div class="empty-icon">🚚</div>
+            <p>No hay entregas cargadas. Comenzá con <strong>Nueva Entrega</strong>.</p>
+          </div>
+        </div>
+
+        <!-- Vista móvil: cards -->
+        <div class="entregas-mobile-view">
+          <div id="entregas-cards-mobile"></div>
           <div class="empty-state hidden" id="entregas-empty">
             <div class="empty-icon">🚚</div>
             <p>No hay entregas cargadas. Comenzá con <strong>Nueva Entrega</strong>.</p>
@@ -3337,9 +3382,12 @@ function renderDashboard() {
 
 // ─── RENDER ENTREGAS ───────────────────────────────────────
 function renderEntregas(filtro = '', estadoFiltro = '') {
-  const tbody = document.getElementById('entregas-tbody');
-  const empty = document.getElementById('entregas-empty');
-  tbody.innerHTML = '';
+  const tbody   = document.getElementById('entregas-tbody');
+  const cardsEl = document.getElementById('entregas-cards-mobile');
+  const empty   = document.getElementById('entregas-empty');
+  const emptyDk = document.getElementById('entregas-empty-desk');
+  if (tbody)   tbody.innerHTML   = '';
+  if (cardsEl) cardsEl.innerHTML = '';
 
   let lista = APP.entregas;
 
@@ -3368,32 +3416,108 @@ function renderEntregas(filtro = '', estadoFiltro = '') {
     lista = lista.filter(e => e.estado === estadoFiltro);
   }
 
-  if (lista.length === 0) {
-    empty.classList.remove('hidden');
-    return;
+  const vacio = lista.length === 0;
+  if (empty)   vacio ? empty.classList.remove('hidden')   : empty.classList.add('hidden');
+  if (emptyDk) vacio ? emptyDk.classList.remove('hidden') : emptyDk.classList.add('hidden');
+  if (vacio) return;
+
+  // ── Helper fecha de carga ──
+  function infoFecha(e) {
+    const iso = e.fechaCreacion;
+    if (!iso) {
+      // Fallback: usar horaAgregado sin fecha (no sabemos el día)
+      return { label: e.horaAgregado ? '🕐 ' + e.horaAgregado : null, clase: 'reciente' };
+    }
+    const ahora = new Date();
+    const fecha  = new Date(iso);
+    const dias   = Math.floor((ahora - fecha) / 86400000);
+    const hora   = fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    const fechaStr = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    if (dias === 0) return { label: 'Hoy ' + hora,           clase: 'hoy' };
+    if (dias === 1) return { label: 'Ayer ' + fechaStr,      clase: 'reciente' };
+    if (dias <= 3)  return { label: 'Hace ' + dias + 'd',    clase: 'reciente' };
+    return           { label: 'Hace ' + dias + 'd ⚠️',       clase: 'vieja' };
   }
-  empty.classList.add('hidden');
 
   lista.forEach((e, i) => {
-    tbody.innerHTML += `<tr>
-      <td style="color:var(--white-dim)">${i+1}</td>
-      <td><code style="font-size:11px;background:var(--bg-input);padding:2px 6px;border-radius:4px">${e.codigo || '—'}</code></td>
-      <td><strong>${e.cliente}</strong></td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--white-dim)">${e.direccion}</td>
-      <td>${e.zona || '—'}</td>
-      <td class="col-hide-mobile">${e.vendedor || '—'}</td>
-      <td class="col-hide-mobile">${e.telefono ? `<a href="tel:${e.telefono}" style="color:var(--blue-light)">${e.telefono}</a>` : '—'}</td>
-      <td>${tipoBadgeHTML(e.tipo)} ${badgeHTML(e.estado)}</td>
-      <td>
-        <div class="action-btns">
-          <button class="btn btn-ghost btn-xs" onclick="abrirModalEstado('${e.id}')">⚡</button>
-          <button class="btn btn-ghost btn-xs" onclick="abrirMaps('${e.direccion}','${e.id}')">📍</button>
-          <button class="btn btn-ghost btn-xs" onclick="abrirModalAsignarChofer('${e.id}')" title="Asignar chofer">🚚</button>
-          <button class="btn btn-ghost btn-xs" onclick="abrirModalAsignarVendedor('${e.id}')" title="Asignar vendedor">👤</button>
-          <button class="btn btn-ghost btn-xs" onclick="eliminarEntrega('${e.id}')" style="color:var(--red)">✕</button>
-        </div>
-      </td>
-    </tr>`;
+    const fi = infoFecha(e);
+    const isPend = e.estado === 'pending' || e.estado === 'transit';
+
+    // ── TABLA DESKTOP ──
+    if (tbody) {
+      const fechaTd = fi.label
+        ? `<span style="font-size:11px;padding:2px 7px;border-radius:99px;font-weight:600;background:${fi.clase==='hoy'?'var(--green-bg)':fi.clase==='vieja'?'var(--red-bg)':'var(--yellow-bg)'};color:${fi.clase==='hoy'?'var(--green)':fi.clase==='vieja'?'var(--red)':'var(--yellow)'}">${fi.label}</span>`
+        : '—';
+      tbody.innerHTML += `<tr>
+        <td style="color:var(--white-dim)">${i+1}</td>
+        <td><code style="font-size:11px;background:var(--bg-input);padding:2px 6px;border-radius:4px">${e.codigo || '—'}</code></td>
+        <td><strong>${e.cliente}</strong></td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--white-dim)">${e.direccion}</td>
+        <td>${e.zona || '—'}</td>
+        <td class="col-hide-mobile">${e.vendedor || '—'}</td>
+        <td class="col-hide-mobile">${e.telefono ? `<a href="tel:${e.telefono}" style="color:var(--blue-light)">${e.telefono}</a>` : '—'}</td>
+        <td>${tipoBadgeHTML(e.tipo)} ${badgeHTML(e.estado)}</td>
+        <td>${fechaTd}</td>
+        <td>
+          <div class="action-btns">
+            <button class="btn btn-ghost btn-xs" onclick="abrirModalEstado('${e.id}')">⚡</button>
+            <button class="btn btn-ghost btn-xs" onclick="abrirMaps('${e.direccion}','${e.id}')">📍</button>
+            <button class="btn btn-ghost btn-xs" onclick="abrirModalAsignarChofer('${e.id}')" title="Asignar chofer">🚚</button>
+            <button class="btn btn-ghost btn-xs" onclick="abrirModalAsignarVendedor('${e.id}')" title="Asignar vendedor">👤</button>
+            <button class="btn btn-ghost btn-xs" onclick="eliminarEntrega('${e.id}')" style="color:var(--red)">✕</button>
+          </div>
+        </td>
+      </tr>`;
+    }
+
+    // ── CARDS MÓVIL ──
+    if (cardsEl) {
+      // Color borde según estado
+      const claseCard = e.estado === 'pending' ? 'pendiente'
+        : e.estado === 'transit' ? 'transit'
+        : (e.estado === 'delivered' || e.estado === 'asistido' || e.estado === 'cobrado') ? 'done'
+        : e.estado === 'rescheduled' ? 'reprog' : 'pendiente';
+
+      // Botón principal según tipo
+      let btnColor = '#00D68F'; let btnLabel = '✅ Entregar';
+      if (e.tipo === 'cobranza')   { btnColor = '#00D68F'; btnLabel = '💰 Cobrado'; }
+      if (e.tipo === 'retiro')     { btnColor = '#1E6FFF'; btnLabel = '🔄 Retirado'; }
+      if (e.tipo === 'asistencia') { btnColor = '#7C3AED'; btnLabel = '🛠️ Asistido'; }
+      if (e.tipo === 'encomienda') { btnColor = '#A855F7'; btnLabel = '📬 Despachar'; }
+
+      const esDone = claseCard === 'done';
+
+      cardsEl.innerHTML += `
+        <div class="entrega-card-mobile ${claseCard}">
+          <div class="ec-header">
+            <div style="flex:1">
+              <div class="ec-cliente">${e.cliente}</div>
+              ${e.codigo ? `<div style="font-size:11px;color:var(--white-dim);margin-top:2px">📋 ${e.codigo}</div>` : ''}
+            </div>
+            <div class="ec-badges">
+              ${badgeHTML(e.estado)}
+              ${tipoBadgeHTML(e.tipo)}
+            </div>
+          </div>
+
+          ${fi.label ? `<div class="ec-fecha ${fi.clase}">⏱️ Cargado: ${fi.label}</div>` : ''}
+
+          <div class="ec-meta">📍 ${e.direccion}${e.zona ? ' · ' + e.zona : ''}</div>
+          ${e.chofer ? `<div class="ec-meta">🚚 ${e.chofer}</div>` : ''}
+          ${e.obs    ? `<div style="font-size:11.5px;color:var(--white-dim);padding:6px 8px;background:var(--bg-input);border-radius:6px;margin-bottom:4px">📝 ${e.obs}</div>` : ''}
+
+          ${!esDone ? `
+          <div class="ec-actions">
+            <button class="btn-accion" style="background:${btnColor};color:${btnColor==='#1E6FFF'?'#fff':'#0A1A12'}" onclick="abrirModalEstado('${e.id}')">${btnLabel}</button>
+            <button class="btn-maps" onclick="abrirMaps('${e.direccion.replace(/'/g,"\\'")}','${e.id}')">📍</button>
+            <button class="btn-del" onclick="eliminarEntrega('${e.id}')">✕</button>
+          </div>` : `
+          <div class="ec-actions">
+            <button class="btn-accion" style="background:var(--bg-input);color:var(--white-dim);border:1px solid var(--border)" onclick="abrirModalEstado('${e.id}')">⚡ Cambiar estado</button>
+            <button class="btn-maps" onclick="abrirMaps('${e.direccion.replace(/'/g,"\\'")}','${e.id}')">📍</button>
+          </div>`}
+        </div>`;
+    }
   });
 }
 
