@@ -1422,8 +1422,8 @@ html { -webkit-text-size-adjust: 100%; }
           </div>
           <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
             <div class="form-group" style="flex:1;min-width:180px">
-              <label id="quick-label">Código de cliente</label>
-              <input type="text" id="quick-code" placeholder="Ej: CLI001" oninput="buscarClienteRapido()" autocomplete="off">
+              <label id="quick-label">Código o nombre de cliente</label>
+              <input type="text" id="quick-code" placeholder="Escribí código o nombre..." oninput="buscarClienteRapido()" autocomplete="off">
             </div>
             <button class="btn btn-secondary btn-sm" onclick="buscarClienteRapido()">
               🔍 Buscar
@@ -3017,18 +3017,24 @@ function closeSidebar() {
 
 // ─── CARGA RÁPIDA POR CÓDIGO ────────────────────────────────
 function buscarClienteRapido() {
-  const codigo = document.getElementById('quick-code').value.trim().toUpperCase();
+  const query = document.getElementById('quick-code').value.trim();
   const resultado = document.getElementById('quick-result');
   const tipo = document.getElementById('f-tipo')?.value;
 
-  if (!codigo) { resultado.classList.add('hidden'); return; }
+  // Limpiar sugerencias previas
+  const sugExist = document.getElementById('quick-sugerencias');
+  if (sugExist) sugExist.remove();
+
+  if (!query) { resultado.classList.add('hidden'); return; }
+
+  const q = query.toUpperCase();
 
   if (tipo === 'retiro') {
-    // Buscar en proveedores en lugar de clientes
+    // Buscar en proveedores
     const prov = (APP.proveedores || []).find(function(p) {
       const cod = String(p.codigo || p.id || '').toUpperCase();
       const nom = (p.nombre || '').toUpperCase();
-      return cod === codigo || cod.includes(codigo) || nom.includes(codigo);
+      return cod === q || cod.includes(q) || nom.includes(q);
     });
     if (prov) {
       document.getElementById('qr-nombre').textContent = prov.nombre;
@@ -3039,29 +3045,66 @@ function buscarClienteRapido() {
       rellenarFormularioProveedor(prov);
     } else {
       resultado.classList.add('hidden');
-      if (codigo.length >= 2) toast('No se encontró el proveedor: ' + codigo, 'error');
     }
     return;
   }
 
-  const cliente = APP.clientes.find(c =>
-    (c.codigo || '').toUpperCase() === codigo ||
-    (c.codigo || '').toUpperCase().includes(codigo)
-  );
+  // Buscar clientes por código O por nombre
+  const coincidencias = APP.clientes.filter(c =>
+    (c.codigo || '').toUpperCase().includes(q) ||
+    (c.nombre || '').toUpperCase().includes(q)
+  ).slice(0, 8);
 
-  if (cliente) {
+  if (coincidencias.length === 0) {
+    resultado.classList.add('hidden');
+    APP._clienteSeleccionado = null;
+    return;
+  }
+
+  if (coincidencias.length === 1) {
+    // Match único — cargar directo
+    const cliente = coincidencias[0];
     document.getElementById('qr-nombre').textContent = cliente.nombre;
     document.getElementById('qr-info').textContent =
       `${cliente.direccion} · ${cliente.zona || ''} · ${cliente.telefono || ''} · Vendedor: ${cliente.vendedor || ''}`;
     resultado.classList.remove('hidden');
     APP._clienteSeleccionado = cliente;
-    // Pre-rellenar formulario
     rellenarFormulario(cliente);
   } else {
+    // Múltiples coincidencias — mostrar lista de sugerencias
     resultado.classList.add('hidden');
-    APP._clienteSeleccionado = null;
-    if (codigo.length >= 2) toast('No se encontró el código: ' + codigo, 'error');
+    const wrap = document.getElementById('quick-code').closest('.form-group').parentNode;
+    const sug = document.createElement('div');
+    sug.id = 'quick-sugerencias';
+    sug.style.cssText = 'background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px;overflow:hidden;box-shadow:var(--shadow)';
+    sug.innerHTML = coincidencias.map((c, i) =>
+      `<div onclick="seleccionarClienteRapido(${i})" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background=\'var(--bg-card2)\'" onmouseout="this.style.background=\'\'">
+        <div>
+          <div style="font-weight:600;font-size:13.5px">${c.nombre}</div>
+          <div style="font-size:11.5px;color:var(--white-dim)">${c.direccion || ''} ${c.zona ? '· ' + c.zona : ''}</div>
+        </div>
+        <code style="font-size:10px;background:var(--bg-input);padding:2px 6px;border-radius:4px;color:var(--white-dim);flex-shrink:0;margin-left:10px">${c.codigo || ''}</code>
+      </div>`
+    ).join('');
+    wrap.appendChild(sug);
+    APP._quickCoincidencias = coincidencias;
   }
+}
+
+function seleccionarClienteRapido(idx) {
+  const cliente = (APP._quickCoincidencias || [])[idx];
+  if (!cliente) return;
+  // Limpiar sugerencias
+  const sug = document.getElementById('quick-sugerencias');
+  if (sug) sug.remove();
+  // Mostrar resultado
+  document.getElementById('quick-code').value = cliente.codigo || cliente.nombre;
+  document.getElementById('qr-nombre').textContent = cliente.nombre;
+  document.getElementById('qr-info').textContent =
+    `${cliente.direccion} · ${cliente.zona || ''} · ${cliente.telefono || ''} · Vendedor: ${cliente.vendedor || ''}`;
+  document.getElementById('quick-result').classList.remove('hidden');
+  APP._clienteSeleccionado = cliente;
+  rellenarFormulario(cliente);
 }
 
 function rellenarFormularioProveedor(prov) {
