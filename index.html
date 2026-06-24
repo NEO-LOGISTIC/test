@@ -1056,6 +1056,83 @@ html { -webkit-text-size-adjust: 100%; }
 .mapa-dot.camino   { background:#A855F7; }
 
 
+/* ─── ENTREGAS CARD MÓVIL ───────────────────────────── */
+.entrega-card-mobile {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  transition: border-color .15s;
+}
+.entrega-card-mobile:hover { border-color: var(--blue); }
+.entrega-card-mobile .ec-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.entrega-card-mobile .ec-cliente {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+}
+.entrega-card-mobile .ec-codigo {
+  font-size: 10.5px;
+  color: var(--white-dim);
+  margin-top: 2px;
+}
+.entrega-card-mobile .ec-fecha-carga {
+  font-size: 10.5px;
+  color: var(--white-faint);
+  margin-top: 1px;
+}
+.entrega-card-mobile .ec-dir {
+  font-size: 12.5px;
+  color: var(--white-dim);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+.entrega-card-mobile .ec-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+.entrega-card-mobile .ec-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.entrega-card-mobile .ec-actions .btn {
+  flex: 1;
+  min-width: 90px;
+  justify-content: center;
+  min-height: 42px;
+  font-size: 13px;
+}
+/* Solo mostrar cards en móvil, tabla en desktop */
+.entregas-mobile-view { display: none; }
+.entregas-desktop-view { display: block; }
+@media (max-width: 768px) {
+  .entregas-mobile-view { display: block; }
+  .entregas-desktop-view { display: none; }
+}
+
+/* ─── FECHA CARGA EN TABLA DESKTOP ──────────────────── */
+.fecha-carga-tag {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--white-faint);
+  background: var(--bg-card2);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-top: 2px;
+}
+
 /* ─── FIX ESPACIOS VACÍOS ────────────────────────────── */
 #page-tecnicos .section-head,
 #page-proveedores .section-head,
@@ -1150,7 +1227,7 @@ html { -webkit-text-size-adjust: 100%; }
           </svg>
         </div>
         <div>
-          <div id="sidebar-empresa-nombre" style="font-family:'Sora',sans-serif;font-weight:800;font-size:16px;letter-spacing:-.5px;line-height:1;color:#F5F7FF">
+          <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:16px;letter-spacing:-.5px;line-height:1;color:#F5F7FF">
             NEO<span style="color:#4D8FFF">LOGISTIC</span>
           </div>
           <div style="font-size:9.5px;color:#4D8FFF;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;font-weight:600">
@@ -1367,7 +1444,7 @@ html { -webkit-text-size-adjust: 100%; }
       <div class="page" id="page-entregas">
         <div class="section-head">
           <h2>Entregas del Día <small>Gestión completa de entregas</small></h2>
-          <div class="flex gap-2" style="flex-wrap:wrap;align-items:center">
+          <div class="flex gap-2">
             <div class="search-bar">
               <svg width="14" height="14" viewBox="0 0 20 20" fill="var(--white-faint)"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
               <input type="text" id="search-entregas" placeholder="Buscar cliente, código, dirección..." oninput="filtrarEntregas()">
@@ -1379,22 +1456,11 @@ html { -webkit-text-size-adjust: 100%; }
               <option value="delivered">Entregado</option>
               <option value="rescheduled">Reprogramado</option>
             </select>
-            <select id="filter-fecha" onchange="onFiltroFechaChange()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13px;padding:8px 12px;outline:none;cursor:pointer">
-              <option value="todas">📅 Todas las fechas</option>
-              <option value="hoy" selected>📅 Hoy</option>
-              <option value="semana">📅 Esta semana</option>
-              <option value="mes">📅 Este mes</option>
-              <option value="personalizado">📅 Período...</option>
-            </select>
-            <div id="filtro-fechas-custom" style="display:none;gap:6px;align-items:center">
-              <input type="date" id="fecha-desde" onchange="filtrarEntregas()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13px;padding:7px 10px;outline:none">
-              <span style="color:var(--white-dim);font-size:12px">→</span>
-              <input type="date" id="fecha-hasta" onchange="filtrarEntregas()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13px;padding:7px 10px;outline:none">
-            </div>
           </div>
         </div>
 
-        <div class="card">
+        <!-- Vista desktop: tabla -->
+        <div class="card entregas-desktop-view">
           <div class="table-wrap">
             <table id="entregas-table">
               <thead>
@@ -1407,12 +1473,22 @@ html { -webkit-text-size-adjust: 100%; }
                   <th class="col-hide-mobile">Vendedor</th>
                   <th class="col-hide-mobile">Teléfono</th>
                   <th>Estado</th>
+                  <th>Cargado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody id="entregas-tbody"></tbody>
             </table>
           </div>
+          <div class="empty-state hidden" id="entregas-empty-desktop">
+            <div class="empty-icon">🚚</div>
+            <p>No hay entregas cargadas. Comenzá con <strong>Nueva Entrega</strong>.</p>
+          </div>
+        </div>
+
+        <!-- Vista móvil: cards -->
+        <div class="entregas-mobile-view">
+          <div id="entregas-cards-mobile"></div>
           <div class="empty-state hidden" id="entregas-empty">
             <div class="empty-icon">🚚</div>
             <p>No hay entregas cargadas. Comenzá con <strong>Nueva Entrega</strong>.</p>
@@ -2122,8 +2198,8 @@ html { -webkit-text-size-adjust: 100%; }
             <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:16px">🏢 Datos del Negocio</div>
             <div class="form-grid" style="grid-template-columns:1fr">
               <div class="form-group">
-                <label>Nombre empresa (aparece en sidebar y mensajes WA)</label>
-                <input type="text" id="cfg-empresa" placeholder="Ej: Neo Logistic" oninput="guardarConfigNegocio()">
+                <label>Nombre empresa</label>
+                <input type="text" id="cfg-empresa" placeholder="Tu empresa" oninput="guardarConfigNegocio()">
               </div>
               <div class="form-group">
                 <label>Ciudad base</label>
@@ -2133,54 +2209,7 @@ html { -webkit-text-size-adjust: 100%; }
                 <label>WhatsApp empresa</label>
                 <input type="text" id="cfg-wa" placeholder="+595 981 000000" oninput="guardarConfigNegocio()">
               </div>
-              <div class="form-group">
-                <label>Logo URL (imagen online, opcional)</label>
-                <input type="text" id="cfg-logo" placeholder="https://... (link a imagen PNG/JPG)" oninput="guardarConfigNegocio()">
-                <div style="margin-top:8px;display:flex;gap:10px;align-items:center">
-                  <div id="cfg-logo-preview" style="display:none;width:44px;height:44px;border-radius:10px;overflow:hidden;border:1px solid var(--border)">
-                    <img id="cfg-logo-img" style="width:100%;height:100%;object-fit:cover">
-                  </div>
-                  <span style="font-size:11px;color:var(--white-faint)">Aparece en el sidebar reemplazando el ícono hexagonal</span>
-                </div>
-              </div>
             </div>
-          </div>
-
-          <!-- Apariencia / Themes -->
-          <div class="card">
-            <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:16px">🎨 Apariencia</div>
-            <p style="font-size:13px;color:var(--white-dim);margin-bottom:14px">Elegí el estilo visual de la aplicación:</p>
-            <div style="display:flex;flex-direction:column;gap:10px">
-              <div onclick="aplicarTheme('default')" id="theme-opt-default" style="cursor:pointer;padding:12px 14px;border-radius:var(--radius-sm);border:2px solid var(--blue);background:var(--blue-glow);display:flex;align-items:center;gap:12px">
-                <div style="width:32px;height:32px;border-radius:6px;background:linear-gradient(135deg,#080D1A,#0F1729);border:1px solid #1E6FFF;flex-shrink:0"></div>
-                <div>
-                  <div style="font-weight:700;font-size:13px">⚡ Neo Dark <span style="background:var(--blue);color:#fff;font-size:10px;padding:1px 6px;border-radius:99px;margin-left:4px">ACTUAL</span></div>
-                  <div style="font-size:11px;color:var(--white-dim)">Azul eléctrico sobre fondo oscuro profundo</div>
-                </div>
-              </div>
-              <div onclick="aplicarTheme('minimalista')" id="theme-opt-minimalista" style="cursor:pointer;padding:12px 14px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg-input);display:flex;align-items:center;gap:12px">
-                <div style="width:32px;height:32px;border-radius:6px;background:linear-gradient(135deg,#0D1117,#161B22);border:1px solid #30363D;flex-shrink:0"></div>
-                <div>
-                  <div style="font-weight:700;font-size:13px">🖤 Minimalista</div>
-                  <div style="font-size:11px;color:var(--white-dim)">Negro puro, bordes sutiles, tipografía limpia</div>
-                </div>
-              </div>
-              <div onclick="aplicarTheme('ejecutivo')" id="theme-opt-ejecutivo" style="cursor:pointer;padding:12px 14px;border-radius:var(--radius-sm);border:2px solid var(--border);background:var(--bg-input);display:flex;align-items:center;gap:12px">
-                <div style="width:32px;height:32px;border-radius:6px;background:linear-gradient(135deg,#0A1628,#112240);border:1px solid #C9A84C;flex-shrink:0"></div>
-                <div>
-                  <div style="font-weight:700;font-size:13px">🏛️ Ejecutivo</div>
-                  <div style="font-size:11px;color:var(--white-dim)">Azul marino profundo con acentos dorados</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Gestión de Usuarios -->
-          <div class="card">
-            <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:16px">👥 Gestión de Usuarios</div>
-            <p style="font-size:13px;color:var(--white-dim);margin-bottom:14px">Usuarios con acceso al sistema. Los cambios se guardan en Firebase.</p>
-            <div id="cfg-usuarios-lista" style="margin-bottom:14px;max-height:220px;overflow-y:auto"></div>
-            <button class="btn btn-primary btn-sm" onclick="abrirModalNuevoUsuario()">➕ Nuevo usuario</button>
           </div>
 
           <!-- Limpiar datos -->
@@ -2327,7 +2356,7 @@ html { -webkit-text-size-adjust: 100%; }
       <button class="btn btn-yellow" onclick="cambiarEstado('pending')">⏳ Pendiente</button>
       <button class="btn" style="background:var(--blue);color:#fff" onclick="cambiarEstado('transit')">🚚 En Camino</button>
       <button class="btn btn-green" onclick="cambiarEstado('delivered')">✅ Entregado</button>
-      <button class="btn btn-red" onclick="(function(){var id=APP._entregaSeleccionada;cerrarModal('modal-estado');reprogramarEntregaChofer(id);})()">🔄 Reprogramado</button>
+      <button class="btn btn-red" onclick="cambiarEstado('rescheduled')">🔄 Reprogramado</button>
       <button class="btn" style="background:#7C3AED;color:#fff" onclick="cambiarEstado('asistido')" id="btn-asistido">🛠️ Asistido</button>
       <button class="btn" style="background:var(--blue-dark);color:#fff" onclick="cambiarEstado('retirado')" id="btn-retirado">📦 Retirado</button>
       <button class="btn" style="background:#00A870;color:#fff" onclick="cobradoSinAviso()" id="btn-cobrado">💰 Cobrado</button>
@@ -2881,19 +2910,10 @@ function restaurarCamposConfig() {
   if (cfg.empresa) document.getElementById('cfg-empresa').value = cfg.empresa;
   if (cfg.ciudad)  document.getElementById('cfg-ciudad').value  = cfg.ciudad;
   if (cfg.whatsapp) document.getElementById('cfg-wa').value = cfg.whatsapp;
-  if (cfg.logo) { const l = document.getElementById('cfg-logo'); if(l) l.value = cfg.logo; }
   const rc = document.getElementById('ruta-chofer');
   const rt = document.getElementById('ruta-tel');
   if (rc && APP.ruta && APP.ruta.chofer)   rc.value = APP.ruta.chofer;
   if (rt && APP.ruta && APP.ruta.telefono) rt.value = APP.ruta.telefono;
-  // Aplicar nombre/logo y theme
-  aplicarNombreYLogo();
-  if (cfg.theme) aplicarTheme(cfg.theme);
-  // Cargar usuarios adicionales desde Firebase
-  db.ref('usuarios_config').once('value', snap => {
-    const data = snap.val() || {};
-    Object.entries(data).forEach(([pin, u]) => { USUARIOS[pin] = u; });
-  });
 }
 
 // ─── GUARDAR EN FIREBASE ───────────────────────────────────
@@ -3031,11 +3051,7 @@ function navigate(page) {
 
   document.getElementById('topbar-page-title').textContent = PAGE_TITLES[page] || page;
   // Update rol badge
-  const rb = document.getElementById('rol-badge');
-  if (rb && APP._rol) {
-    const _rl = {admin:'👑 Admin', editor:'✏️ Editor', vendedor:'👤 Vendedor', chofer:'🚚 Chofer', tecnico:'🛠️ Técnico', compras_cobranzas:'💰 Cobranzas', invitado:'👁️ Demo'}[APP._rol] || APP._rol;
-    rb.textContent = _rl;
-  }
+  const rb = document.getElementById('rol-badge'); if(rb && APP._rol) rb.textContent = APP._rol === 'admin' ? '👑 Admin' : '👤 Vendedor';
 
   // Re-renderizar según la página
   if (page === 'dashboard')   renderDashboard();
@@ -3048,7 +3064,6 @@ function navigate(page) {
   if (page === 'choferes')    renderChoferes();
   if (page === 'estadisticas') setTimeout(renderEstadisticas, 150);
   if (page === 'rutachofer')  { poblarSelectoresChofer(); renderRutaChofer(); }
-  if (page === 'config')      { renderCfgUsuarios(); }
 
   closeSidebar();
   window.scrollTo(0,0);
@@ -3351,10 +3366,13 @@ function renderDashboard() {
 }
 
 // ─── RENDER ENTREGAS ───────────────────────────────────────
-function renderEntregas(filtro = '', estadoFiltro = '', rangoFecha = null) {
+function renderEntregas(filtro = '', estadoFiltro = '') {
   const tbody = document.getElementById('entregas-tbody');
   const empty = document.getElementById('entregas-empty');
-  tbody.innerHTML = '';
+  const emptyDesk = document.getElementById('entregas-empty-desktop');
+  const cardsEl = document.getElementById('entregas-cards-mobile');
+  if (tbody) tbody.innerHTML = '';
+  if (cardsEl) cardsEl.innerHTML = '';
 
   let lista = APP.entregas;
 
@@ -3365,7 +3383,7 @@ function renderEntregas(filtro = '', estadoFiltro = '', rangoFecha = null) {
     lista = lista.filter(e => e.vendedor === u.nombre);
   }
   if (rol === 'tecnico' && APP._tabTecnico !== 'todas') {
-    lista = lista.filter(e => e.tecnico === u.nombre || e.tipo === 'asistencia');
+    lista = lista.filter(e => e.tecnico === u.nombre);
   }
   if (rol === 'operaciones' || rol === 'compras_cobranzas') {
     lista = lista.filter(e => e.tipo === 'retiro' || e.tipo === 'cobranza');
@@ -3382,99 +3400,103 @@ function renderEntregas(filtro = '', estadoFiltro = '', rangoFecha = null) {
   if (estadoFiltro) {
     lista = lista.filter(e => e.estado === estadoFiltro);
   }
-  if (rangoFecha) {
-    lista = lista.filter(e => entregaEnRangoFecha(e, rangoFecha));
-  }
 
-  if (lista.length === 0) {
-    empty.classList.remove('hidden');
-    return;
+  const isEmpty = lista.length === 0;
+  if (empty) isEmpty ? empty.classList.remove('hidden') : empty.classList.add('hidden');
+  if (emptyDesk) isEmpty ? emptyDesk.classList.remove('hidden') : emptyDesk.classList.add('hidden');
+  if (isEmpty) return;
+
+  // Helper: calcular días desde carga
+  function diasDesde(iso) {
+    if (!iso) return null;
+    const diff = Date.now() - new Date(iso).getTime();
+    const dias = Math.floor(diff / 86400000);
+    if (dias === 0) return 'Hoy';
+    if (dias === 1) return 'Ayer';
+    return 'Hace ' + dias + 'd';
   }
-  empty.classList.add('hidden');
 
   lista.forEach((e, i) => {
-    tbody.innerHTML += `<tr>
-      <td style="color:var(--white-dim)">${i+1}</td>
-      <td><code style="font-size:11px;background:var(--bg-input);padding:2px 6px;border-radius:4px">${e.codigo || '—'}</code></td>
-      <td><strong>${e.cliente}</strong></td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--white-dim)">${e.direccion}</td>
-      <td>${e.zona || '—'}</td>
-      <td class="col-hide-mobile">${e.vendedor || '—'}</td>
-      <td class="col-hide-mobile">${e.telefono ? `<a href="tel:${e.telefono}" style="color:var(--blue-light)">${e.telefono}</a>` : '—'}</td>
-      <td>${tipoBadgeHTML(e.tipo)} ${badgeHTML(e.estado)}</td>
-      <td>
-        <div class="action-btns">
-          <button class="btn btn-ghost btn-xs" onclick="abrirModalEstado('${e.id}')">⚡</button>
-          <button class="btn btn-ghost btn-xs" onclick="abrirMaps('${e.direccion}','${e.id}')">📍</button>
-          <button class="btn btn-ghost btn-xs" onclick="abrirModalAsignarChofer('${e.id}')" title="Asignar chofer">🚚</button>
-          <button class="btn btn-ghost btn-xs" onclick="abrirModalAsignarVendedor('${e.id}')" title="Asignar vendedor">👤</button>
-          <button class="btn btn-ghost btn-xs" onclick="eliminarEntrega('${e.id}')" style="color:var(--red)">✕</button>
-        </div>
-      </td>
-    </tr>`;
+    const fechaCargaLabel = diasDesde(e.fechaCreacion);
+    const isPendiente = e.estado === 'pending' || e.estado === 'transit';
+
+    // ── TABLA DESKTOP ──
+    if (tbody) {
+      tbody.innerHTML += `<tr>
+        <td style="color:var(--white-dim)">${i+1}</td>
+        <td><code style="font-size:11px;background:var(--bg-input);padding:2px 6px;border-radius:4px">${e.codigo || '—'}</code></td>
+        <td><strong>${e.cliente}</strong></td>
+        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--white-dim)">${e.direccion}</td>
+        <td>${e.zona || '—'}</td>
+        <td class="col-hide-mobile">${e.vendedor || '—'}</td>
+        <td class="col-hide-mobile">${e.telefono ? `<a href="tel:${e.telefono}" style="color:var(--blue-light)">${e.telefono}</a>` : '—'}</td>
+        <td>${tipoBadgeHTML(e.tipo)} ${badgeHTML(e.estado)}</td>
+        <td>
+          ${fechaCargaLabel ? `<span class="fecha-carga-tag${isPendiente && fechaCargaLabel !== 'Hoy' ? '" style="color:var(--yellow)' : ''}">${fechaCargaLabel}</span>` : '—'}
+        </td>
+        <td>
+          <div class="action-btns">
+            <button class="btn btn-ghost btn-xs" onclick="abrirModalEstado('${e.id}')">⚡</button>
+            <button class="btn btn-ghost btn-xs" onclick="abrirMaps('${e.direccion}','${e.id}')">📍</button>
+            <button class="btn btn-ghost btn-xs" onclick="abrirModalAsignarChofer('${e.id}')" title="Asignar chofer">🚚</button>
+            <button class="btn btn-ghost btn-xs" onclick="abrirModalAsignarVendedor('${e.id}')" title="Asignar vendedor">👤</button>
+            <button class="btn btn-ghost btn-xs" onclick="eliminarEntrega('${e.id}')" style="color:var(--red)">✕</button>
+          </div>
+        </td>
+      </tr>`;
+    }
+
+    // ── CARDS MÓVIL ──
+    if (cardsEl) {
+      // Determinar botón de acción principal
+      let btnAccion = '';
+      if (e.tipo === 'cobranza') {
+        btnAccion = `<button class="btn btn-green" onclick="abrirModalEstado('${e.id}')">💰 Cobrado</button>`;
+      } else if (e.tipo === 'retiro') {
+        btnAccion = `<button class="btn btn-primary" onclick="abrirModalEstado('${e.id}')">🔄 Retirado</button>`;
+      } else if (e.tipo === 'asistencia') {
+        btnAccion = `<button class="btn btn-primary" style="background:#7C3AED;border-color:#7C3AED" onclick="abrirModalEstado('${e.id}')">🛠️ Asistido</button>`;
+      } else if (e.tipo === 'encomienda') {
+        btnAccion = `<button class="btn btn-primary" onclick="abrirModalEstado('${e.id}')">📬 Despachar</button>`;
+      } else {
+        btnAccion = `<button class="btn btn-green" onclick="abrirModalEstado('${e.id}')">✅ Entregar</button>`;
+      }
+
+      const fechaStyle = isPendiente && fechaCargaLabel && fechaCargaLabel !== 'Hoy' && fechaCargaLabel !== 'Ayer'
+        ? 'color:var(--yellow)' : 'color:var(--white-faint)';
+
+      cardsEl.innerHTML += `
+        <div class="entrega-card-mobile">
+          <div class="ec-top">
+            <div>
+              <div class="ec-cliente">${e.cliente}</div>
+              ${e.codigo ? `<div class="ec-codigo">📋 ${e.codigo}</div>` : ''}
+              ${fechaCargaLabel ? `<div class="ec-fecha-carga" style="${fechaStyle}">⏱️ Cargado: ${fechaCargaLabel}</div>` : ''}
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+              ${badgeHTML(e.estado)}
+              ${tipoBadgeHTML(e.tipo)}
+            </div>
+          </div>
+          <div class="ec-dir">
+            <span>📍</span>
+            <span>${e.direccion}${e.zona ? ' · ' + e.zona : ''}</span>
+          </div>
+          ${e.obs ? `<div style="font-size:11.5px;color:var(--white-dim);margin-bottom:8px;padding:6px 10px;background:var(--bg-input);border-radius:6px">📝 ${e.obs}</div>` : ''}
+          <div class="ec-actions">
+            ${btnAccion}
+            <button class="btn btn-ghost" onclick="abrirMaps('${e.direccion.replace(/'/g,"\\'")}','${e.id}')">📍 Mapa</button>
+            <button class="btn btn-ghost" onclick="eliminarEntrega('${e.id}')" style="color:var(--red);flex:0;min-width:auto;padding:10px 12px">✕</button>
+          </div>
+        </div>`;
+    }
   });
-}
-
-function onFiltroFechaChange() {
-  const val = document.getElementById('filter-fecha').value;
-  const customDiv = document.getElementById('filtro-fechas-custom');
-  if (val === 'personalizado') {
-    customDiv.style.display = 'flex';
-    const hoy = new Date().toISOString().slice(0,10);
-    if (!document.getElementById('fecha-desde').value) document.getElementById('fecha-desde').value = hoy;
-    if (!document.getElementById('fecha-hasta').value) document.getElementById('fecha-hasta').value = hoy;
-  } else {
-    customDiv.style.display = 'none';
-  }
-  filtrarEntregas();
-}
-
-function getFiltroFechaRango() {
-  const sel = document.getElementById('filter-fecha');
-  const val = sel ? sel.value : 'todas';
-  const hoy = new Date();
-  const yyyy = hoy.getFullYear();
-  const mm = String(hoy.getMonth()+1).padStart(2,'0');
-  const dd = String(hoy.getDate()).padStart(2,'0');
-  const hoyStr = yyyy+'-'+mm+'-'+dd;
-  if (val === 'todas') return null;
-  if (val === 'hoy') return { desde: hoyStr, hasta: hoyStr };
-  if (val === 'semana') {
-    const dow = hoy.getDay();
-    const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - ((dow+6)%7));
-    const domingo = new Date(lunes); domingo.setDate(lunes.getDate()+6);
-    return { desde: lunes.toISOString().slice(0,10), hasta: domingo.toISOString().slice(0,10) };
-  }
-  if (val === 'mes') return { desde: yyyy+'-'+mm+'-01', hasta: hoyStr };
-  if (val === 'personalizado') {
-    const desde = document.getElementById('fecha-desde').value;
-    const hasta = document.getElementById('fecha-hasta').value;
-    if (!desde || !hasta) return null;
-    return { desde, hasta };
-  }
-  return null;
-}
-
-function entregaEnRangoFecha(e, rango) {
-  if (!rango) return true;
-  if (e.estado === 'pending' || e.estado === 'transit') return true;
-  const fechaE = e.fecha || e.fechaCreacion || e.createdAt || '';
-  if (!fechaE) return true;
-  let fechaStr = '';
-  if (typeof fechaE === 'number') {
-    fechaStr = new Date(fechaE).toISOString().slice(0,10);
-  } else if (typeof fechaE === 'string') {
-    fechaStr = fechaE.slice(0,10);
-  }
-  if (!fechaStr) return true;
-  return fechaStr >= rango.desde && fechaStr <= rango.hasta;
 }
 
 function filtrarEntregas() {
   const filtro = document.getElementById('search-entregas').value;
   const estado = document.getElementById('filter-estado').value;
-  const rango = getFiltroFechaRango();
-  renderEntregas(filtro, estado, rango);
+  renderEntregas(filtro, estado);
 }
 
 // ─── RENDER CLIENTES ───────────────────────────────────────
@@ -3880,226 +3902,13 @@ function updateConfig(key, val) {
 }
 
 function guardarConfigNegocio() {
-  const logoUrl = document.getElementById('cfg-logo')?.value.trim() || '';
   const cfg = {
-    empresa:  document.getElementById('cfg-empresa').value.trim(),
-    ciudad:   document.getElementById('cfg-ciudad').value.trim(),
-    whatsapp: document.getElementById('cfg-wa').value.trim(),
-    logo:     logoUrl
+    empresa:  document.getElementById('cfg-empresa').value,
+    ciudad:   document.getElementById('cfg-ciudad').value,
+    whatsapp: document.getElementById('cfg-wa').value
   };
   APP.config = { ...APP.config, ...cfg };
   fbGuardarConfig(cfg);
-  // Actualizar nombre en sidebar en tiempo real
-  aplicarNombreYLogo();
-}
-
-function aplicarNombreYLogo() {
-  const empresa = APP.config.empresa;
-  const logo    = APP.config.logo;
-  const logoUrl = logo || '';
-  // Sidebar nombre
-  const el = document.getElementById('sidebar-empresa-nombre');
-  if (el && empresa) {
-    el.textContent = empresa;
-    el.style.fontSize = empresa.length > 12 ? '13px' : '16px';
-  }
-  // Logo preview en config
-  const prev = document.getElementById('cfg-logo-preview');
-  const img  = document.getElementById('cfg-logo-img');
-  if (prev && img) {
-    if (logoUrl) {
-      img.src = logoUrl;
-      prev.style.display = 'block';
-    } else {
-      prev.style.display = 'none';
-    }
-  }
-  // Logo en sidebar icon (reemplaza SVG)
-  const logoIcon = document.querySelector('#sidebar-logo .logo-icon');
-  if (logoIcon && logoUrl) {
-    logoIcon.innerHTML = `<img src="${logoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">`;
-  } else if (logoIcon && !logoUrl) {
-    // restaurar SVG original si se borró el logo
-    logoIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-      <path d="M3 8L12 3L21 8V16L12 21L3 16V8Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
-      <path d="M12 3V12M12 12L21 8M12 12L3 8" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
-      <circle cx="12" cy="12" r="2" fill="#fff"/></svg>`;
-  }
-}
-
-// ─── THEMES ───────────────────────────────────────────────
-
-const THEMES = {
-  default: {
-    '--bg-deep':      '#080D1A',
-    '--bg-card':      '#0F1729',
-    '--bg-card2':     '#141E35',
-    '--bg-input':     '#0A1220',
-    '--border':       '#1A2740',
-    '--border-bright':'#1E6FFF40',
-    '--blue':         '#1E6FFF',
-    '--blue-light':   '#4D8FFF',
-    '--blue-glow':    '#1E6FFF22',
-    '--blue-dark':    '#0A3BAA',
-    '--white':        '#F5F7FF',
-    '--white-dim':    '#8A95B0',
-    '--white-faint':  '#3A4560',
-    '--yellow':       '#FFB800',
-    '--green':        '#00D68F',
-    '--red':          '#FF4560'
-  },
-  minimalista: {
-    '--bg-deep':      '#0D1117',
-    '--bg-card':      '#161B22',
-    '--bg-card2':     '#1C2128',
-    '--bg-input':     '#0D1117',
-    '--border':       '#30363D',
-    '--border-bright':'#58A6FF40',
-    '--blue':         '#58A6FF',
-    '--blue-light':   '#79C0FF',
-    '--blue-glow':    '#58A6FF18',
-    '--blue-dark':    '#1F6FEB',
-    '--white':        '#E6EDF3',
-    '--white-dim':    '#8B949E',
-    '--white-faint':  '#484F58',
-    '--yellow':       '#E3B341',
-    '--green':        '#3FB950',
-    '--red':          '#F85149'
-  },
-  ejecutivo: {
-    '--bg-deep':      '#060C18',
-    '--bg-card':      '#0A1628',
-    '--bg-card2':     '#0E1E36',
-    '--bg-input':     '#071020',
-    '--border':       '#1A2E4A',
-    '--border-bright':'#C9A84C40',
-    '--blue':         '#C9A84C',
-    '--blue-light':   '#E2C97E',
-    '--blue-glow':    '#C9A84C18',
-    '--blue-dark':    '#8B6914',
-    '--white':        '#F0EAD6',
-    '--white-dim':    '#9A8E6E',
-    '--white-faint':  '#3D3520',
-    '--yellow':       '#E2C97E',
-    '--green':        '#4CAF7A',
-    '--red':          '#E05252'
-  }
-};
-
-function aplicarTheme(nombre) {
-  const theme = THEMES[nombre];
-  if (!theme) return;
-  const root = document.documentElement;
-  Object.entries(theme).forEach(([k, v]) => root.style.setProperty(k, v));
-  // Marcar opción activa
-  ['default','minimalista','ejecutivo'].forEach(t => {
-    const el = document.getElementById('theme-opt-' + t);
-    if (!el) return;
-    if (t === nombre) {
-      el.style.border = '2px solid var(--blue)';
-      el.style.background = 'var(--blue-glow)';
-    } else {
-      el.style.border = '2px solid var(--border)';
-      el.style.background = 'var(--bg-input)';
-    }
-  });
-  APP.config.theme = nombre;
-  fbGuardarConfig({ theme: nombre });
-  toast('🎨 Tema "' + nombre + '" aplicado', 'success');
-}
-
-// ─── GESTIÓN DE USUARIOS ──────────────────────────────────
-
-function renderCfgUsuarios() {
-  const el = document.getElementById('cfg-usuarios-lista');
-  if (!el) return;
-  // Cargar desde Firebase
-  db.ref('usuarios_config').once('value', snap => {
-    const data = snap.val() || {};
-    // Combinar con USUARIOS base (solo mostrar, no editar base)
-    const todos = Object.entries(data);
-    if (todos.length === 0) {
-      el.innerHTML = '<div style="font-size:12px;color:var(--white-faint);padding:8px 0">No hay usuarios adicionales. Los usuarios base están en el código.</div>';
-      return;
-    }
-    el.innerHTML = todos.map(([pin, u]) => `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dark));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">${(u.nombre||'?').charAt(0).toUpperCase()}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:600">${u.nombre}</div>
-          <div style="font-size:11px;color:var(--white-dim)">PIN: ${pin} · ${({admin:'👑 Admin',vendedor:'👤 Vendedor',chofer:'🚚 Chofer',tecnico:'🛠️ Técnico',compras_cobranzas:'💰 Cobranzas'}[u.rol]||u.rol)}</div>
-        </div>
-        <button onclick="eliminarUsuarioCfg('${pin}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;flex-shrink:0">✕</button>
-      </div>`).join('');
-  });
-}
-
-function abrirModalNuevoUsuario() {
-  const overlay = document.getElementById('overlay-nuevo-usuario');
-  if (overlay) overlay.remove();
-  const ov = document.createElement('div');
-  ov.id = 'overlay-nuevo-usuario';
-  ov.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;';
-  ov.innerHTML = `
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-width:400px;width:90%;padding:0">
-      <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;margin:0">👤 Nuevo Usuario</h3>
-        <button onclick="document.getElementById('overlay-nuevo-usuario').remove()" style="background:none;border:none;color:var(--white-dim);font-size:20px;cursor:pointer">✕</button>
-      </div>
-      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
-        <div class="form-group">
-          <label>Nombre completo *</label>
-          <input type="text" id="nu-nombre" placeholder="Ej: Juan Pérez">
-        </div>
-        <div class="form-group">
-          <label>PIN de acceso (4 dígitos) *</label>
-          <input type="text" id="nu-pin" placeholder="Ej: 6789" maxlength="4" pattern="[0-9]{4}">
-        </div>
-        <div class="form-group">
-          <label>Rol</label>
-          <select id="nu-rol" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13.5px;padding:9px 12px;outline:none;width:100%">
-            <option value="admin">👑 Administrador</option>
-            <option value="vendedor" selected>👤 Vendedor</option>
-            <option value="chofer">🚚 Chofer</option>
-            <option value="tecnico">🛠️ Técnico</option>
-            <option value="compras_cobranzas">💰 Compras y Cobranzas</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
-          <button onclick="document.getElementById('overlay-nuevo-usuario').remove()" style="background:transparent;border:1px solid var(--border);color:var(--white-dim);padding:9px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer">Cancelar</button>
-          <button onclick="guardarNuevoUsuario()" style="background:var(--blue);color:#fff;border:none;padding:9px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer">💾 Guardar</button>
-        </div>
-      </div>
-    </div>`;
-  document.body.appendChild(ov);
-  setTimeout(() => document.getElementById('nu-nombre')?.focus(), 50);
-}
-
-function guardarNuevoUsuario() {
-  const nombre = document.getElementById('nu-nombre')?.value.trim();
-  const pin    = document.getElementById('nu-pin')?.value.trim();
-  const rol    = document.getElementById('nu-rol')?.value;
-  if (!nombre || !pin) { toast('Nombre y PIN son obligatorios', 'error'); return; }
-  if (!/^\d{4}$/.test(pin)) { toast('El PIN debe ser 4 dígitos numéricos', 'error'); return; }
-  // Verificar que el PIN no esté en uso
-  if (USUARIOS[pin]) { toast('Ese PIN ya está en uso por ' + USUARIOS[pin].nombre, 'error'); return; }
-  const datos = { nombre, rol, tipo: rol, id: rol + '_' + Date.now() };
-  db.ref('usuarios_config/' + pin).set(datos).then(() => {
-    toast(`✅ Usuario "${nombre}" creado con PIN ${pin}`, 'success');
-    document.getElementById('overlay-nuevo-usuario')?.remove();
-    renderCfgUsuarios();
-    // Agregar al mapa de USUARIOS en memoria para esta sesión
-    USUARIOS[pin] = datos;
-  }).catch(() => toast('Error al guardar usuario', 'error'));
-}
-
-function eliminarUsuarioCfg(pin) {
-  if (!confirm('¿Eliminar este usuario?')) return;
-  db.ref('usuarios_config/' + pin).remove().then(() => {
-    delete USUARIOS[pin];
-    toast('Usuario eliminado', 'info');
-    renderCfgUsuarios();
-  });
 }
 
 function limpiarEntregasHoy() {
@@ -4868,52 +4677,16 @@ function confirmarEntregaChofer() {
 
 function reprogramarEntregaChofer(id) {
   APP._reprogramarId = id;
-  // Eliminar overlay anterior si existe
-  const old = document.getElementById('overlay-reprogramar');
-  if (old) old.remove();
-  // Crear overlay dinámico — inmune al re-render de Firebase
-  const overlay = document.createElement('div');
-  overlay.id = 'overlay-reprogramar';
-  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;';
-  overlay.innerHTML = `
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);max-width:420px;width:90%;padding:0;box-shadow:0 8px 32px #00000080">
-      <div style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
-        <h3 style="font-family:var(--font-display);font-size:17px;font-weight:700;margin:0">🔄 Reprogramar Entrega</h3>
-        <button onclick="cerrarReprogramar()" style="background:none;border:none;color:var(--white-dim);font-size:20px;cursor:pointer;line-height:1;padding:0 4px">✕</button>
-      </div>
-      <div style="padding:20px">
-        <p style="color:var(--white-dim);font-size:14px;margin-bottom:16px">
-          Indicá el motivo por el cual no se pudo realizar la entrega hoy.
-        </p>
-        <div style="margin-bottom:16px">
-          <label style="font-weight:600;margin-bottom:8px;display:block;font-size:13px">Motivo de reprogramación *</label>
-          <textarea id="reprog-motivo-dyn" rows="4" placeholder="Ej: Cliente ausente, dirección cerrada, problema con el producto..."
-            style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:14px;padding:10px 12px;resize:vertical;outline:none;box-sizing:border-box"></textarea>
-        </div>
-        <div style="display:flex;gap:10px;justify-content:flex-end">
-          <button onclick="cerrarReprogramar()" style="background:transparent;border:1px solid var(--border);color:var(--white-dim);padding:9px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13.5px;font-weight:600;cursor:pointer">Cancelar</button>
-          <button onclick="confirmarReprogramacion()" style="background:var(--blue);color:#fff;border:none;padding:9px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13.5px;font-weight:600;cursor:pointer">🔄 Confirmar</button>
-        </div>
-      </div>
-    </div>`;
-  document.body.appendChild(overlay);
-  // Focus en el textarea
-  setTimeout(function() {
-    const ta = document.getElementById('reprog-motivo-dyn');
-    if (ta) ta.focus();
-  }, 50);
-}
-
-function cerrarReprogramar() {
-  const overlay = document.getElementById('overlay-reprogramar');
-  if (overlay) overlay.remove();
+  // Mover el modal al body para que no quede atrapado en ningún contenedor
+  const m = document.getElementById('modal-reprogramar');
+  document.body.appendChild(m);
+  document.getElementById('reprog-motivo').value = '';
+  m.style.cssText = 'display:flex !important;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;';
 }
 
 function confirmarReprogramacion() {
   const id = APP._reprogramarId;
-  // Leer del textarea dinámico (nuevo) o del estático (fallback)
-  const taEl = document.getElementById('reprog-motivo-dyn') || document.getElementById('reprog-motivo');
-  const motivo = taEl ? taEl.value.trim() : '';
+  const motivo = document.getElementById('reprog-motivo').value.trim();
   if (!motivo) { toast('Ingresá el motivo de reprogramación', 'error'); return; }
   const e = APP.entregas.find(function(x) { return x.id === id; });
   const obsAnterior = e && e.obs ? e.obs + ' | ' : '';
@@ -4924,7 +4697,7 @@ function confirmarReprogramacion() {
   })
     .then(function() {
       toast('Entrega reprogramada', 'info');
-      cerrarReprogramar();
+      document.getElementById('modal-reprogramar').style.display = 'none';
       // Notificar al vendedor por WhatsApp
       if (e && e.vendedor) {
         const vend = APP.vendedores.find(function(v) { return v.nombre === e.vendedor; });
@@ -5586,7 +5359,7 @@ function asistidoWhatsapp() {
 
 
 function agregarTabsTecnico() {
-  // Tabs para técnico: Mis asistencias / Todas
+  // Tabs para técnico: Mis asistencias y entregas / Todas
   const sh = document.querySelector('#page-entregas .section-head');
   if (!sh || document.getElementById('tabs-tecnico')) return;
   const tabs = document.createElement('div');
@@ -5595,7 +5368,7 @@ function agregarTabsTecnico() {
   tabs.innerHTML = `
     <button id="tab-tec-mis" onclick="setTabTecnico('mis')"
       style="padding:8px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;border:1px solid #7C3AED;background:#7C3AED;color:#fff">
-      🛠️ Mis asistencias
+      🛠️ Mis tareas
     </button>
     <button id="tab-tec-todas" onclick="setTabTecnico('todas')"
       style="padding:8px 18px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--white-dim)">
@@ -5674,8 +5447,19 @@ function renderTecnicos() {
         const pendientes = APP.entregas.filter(function(e) {
           return e.tecnico === t.nombre && e.tipo === 'asistencia' && (e.estado === 'pending' || e.estado === 'transit');
         }).length;
-        const hoy = APP.entregas.filter(function(e) {
+        const asistHoy = APP.entregas.filter(function(e) {
           return e.tecnico === t.nombre && e.tipo === 'asistencia' && e.estado === 'asistido';
+        }).length;
+        // Entregas (reparto) asignadas al técnico
+        const entPend = APP.entregas.filter(function(e) {
+          return e.tecnico === t.nombre && e.tipo !== 'asistencia' && (e.estado === 'pending' || e.estado === 'transit');
+        }).length;
+        const entDone = APP.entregas.filter(function(e) {
+          return e.tecnico === t.nombre && e.tipo !== 'asistencia' && (e.estado === 'delivered' || e.estado === 'cobrado' || e.estado === 'retirado');
+        }).length;
+        // Cobros
+        const cobros = APP.entregas.filter(function(e) {
+          return e.tecnico === t.nombre && e.tipo === 'cobranza' && e.estado === 'cobrado';
         }).length;
         const color = pendientes > 0 ? 'var(--yellow)' : 'var(--green)';
         return '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px">' +
@@ -5686,10 +5470,20 @@ function renderTecnicos() {
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
           '<div style="background:var(--bg-input);border-radius:8px;padding:10px;text-align:center">' +
           '<div style="font-size:24px;font-weight:800;color:' + color + ';font-family:var(--font-display)">' + pendientes + '</div>' +
-          '<div style="font-size:11px;color:var(--white-dim)">Pendientes</div></div>' +
+          '<div style="font-size:11px;color:var(--white-dim)">🛠️ Asist. pend.</div></div>' +
           '<div style="background:var(--bg-input);border-radius:8px;padding:10px;text-align:center">' +
-          '<div style="font-size:24px;font-weight:800;color:var(--green);font-family:var(--font-display)">' + hoy + '</div>' +
-          '<div style="font-size:11px;color:var(--white-dim)">Completadas hoy</div></div>' +
+          '<div style="font-size:24px;font-weight:800;color:var(--green);font-family:var(--font-display)">' + asistHoy + '</div>' +
+          '<div style="font-size:11px;color:var(--white-dim)">🛠️ Asist. hoy</div></div>' +
+          (entPend + entDone > 0 ? (
+            '<div style="background:var(--bg-input);border-radius:8px;padding:10px;text-align:center">' +
+            '<div style="font-size:24px;font-weight:800;color:var(--blue-light);font-family:var(--font-display)">' + entDone + '<span style="font-size:13px;color:var(--white-dim)">/' + (entPend + entDone) + '</span></div>' +
+            '<div style="font-size:11px;color:var(--white-dim)">📦 Entregas</div></div>'
+          ) : '') +
+          (cobros > 0 ? (
+            '<div style="background:var(--bg-input);border-radius:8px;padding:10px;text-align:center">' +
+            '<div style="font-size:24px;font-weight:800;color:var(--green);font-family:var(--font-display)">' + cobros + '</div>' +
+            '<div style="font-size:11px;color:var(--white-dim)">💰 Cobros</div></div>'
+          ) : '') +
           '</div></div>';
       }).join('');
     }
@@ -5700,8 +5494,11 @@ function renderTecnicos() {
   empty.classList.add('hidden');
 
   lista.forEach((t, i) => {
-    const asist = APP.entregas.filter(e => e.tecnico === t.nombre).length;
-    const done  = APP.entregas.filter(e => e.tecnico === t.nombre && e.estado === 'asistido').length;
+    const asist = APP.entregas.filter(e => e.tecnico === t.nombre && e.tipo === 'asistencia').length;
+    const done  = APP.entregas.filter(e => e.tecnico === t.nombre && e.tipo === 'asistencia' && e.estado === 'asistido').length;
+    const entTotal = APP.entregas.filter(e => e.tecnico === t.nombre && e.tipo !== 'asistencia').length;
+    const entDone  = APP.entregas.filter(e => e.tecnico === t.nombre && (e.estado === 'delivered' || e.estado === 'cobrado' || e.estado === 'retirado') && e.tipo !== 'asistencia').length;
+    const cobros   = APP.entregas.filter(e => e.tecnico === t.nombre && e.tipo === 'cobranza' && e.estado === 'cobrado').length;
     tbody.innerHTML += `<tr>
       <td style="color:var(--white-dim)">${i+1}</td>
       <td>
@@ -5718,8 +5515,11 @@ function renderTecnicos() {
       <td>${t.wa ? `<a href="https://api.whatsapp.com/send?phone=${t.wa.replace(/\D/g,'')}" target="_blank" style="color:var(--green)">${t.wa}</a>` : '—'}</td>
       <td>${t.zona || '—'}</td>
       <td>
-        <span style="font-family:var(--font-display);font-weight:700">${done}</span>
-        <span style="color:var(--white-dim);font-size:12px"> / ${asist}</span>
+        <div style="font-size:12px">
+          🛠️ <span style="font-family:var(--font-display);font-weight:700">${done}</span><span style="color:var(--white-dim)">/${asist}</span>
+          ${entTotal > 0 ? `<br>📦 <span style="font-family:var(--font-display);font-weight:700">${entDone}</span><span style="color:var(--white-dim)">/${entTotal}</span>` : ''}
+          ${cobros > 0 ? `<br>💰 <span style="font-family:var(--font-display);font-weight:700;color:var(--green)">${cobros}</span>` : ''}
+        </div>
       </td>
       <td>
         <div class="action-btns">
@@ -7429,7 +7229,7 @@ function guardarUbicacionChofer() {
 
 
     <!-- Modal Reprogramar -->
-    <div id="modal-reprogramar" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;">
+    <div id="modal-reprogramar" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
       <div class="modal-box" style="max-width:420px;background:var(--bg-card);border-radius:var(--radius);padding:0;width:90%">
         <div class="modal-header">
           <h3>🔄 Reprogramar Entrega</h3>
@@ -7446,6 +7246,20 @@ function guardarUbicacionChofer() {
           </div>
           <div style="display:flex;gap:10px;justify-content:flex-end">
             <button class="btn btn-ghost" onclick="document.getElementById('modal-reprogramar').style.display='none'">Cancelar</button>
+            <button class="btn btn-primary" onclick="confirmarReprogramacion()">🔄 Confirmar</button>
+          </div>
+        </div>
+      </div>
+    </div>x">
+            Indicá el motivo por el cual no se pudo realizar la entrega hoy.
+          </p>
+          <div class="form-group" style="margin-bottom:16px">
+            <label style="font-weight:600;margin-bottom:8px;display:block">Motivo de reprogramación *</label>
+            <textarea id="reprog-motivo" rows="3" placeholder="Ej: Cliente ausente, dirección cerrada, problema con el producto..."
+              style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:14px;padding:10px 12px;resize:vertical;outline:none"></textarea>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button class="btn btn-ghost" onclick="cerrarModal(&#39;modal-reprogramar&#39;)">Cancelar</button>
             <button class="btn btn-primary" onclick="confirmarReprogramacion()">🔄 Confirmar Reprogramación</button>
           </div>
         </div>
