@@ -2144,16 +2144,20 @@ html { -webkit-text-size-adjust: 100%; }
                 <strong>Minutos por entrega</strong>
                 Tiempo en cada punto de parada
               </label>
-              <div class="config-val" id="val-min-entrega">10</div>
-              <input type="range" min="2" max="60" value="10" id="range-min-entrega" style="width:80px" oninput="updateConfig('min-entrega',this.value)">
+              <div style="display:flex;align-items:center;gap:12px;width:100%;margin-top:10px">
+                <input type="range" min="2" max="60" value="10" id="range-min-entrega" style="flex:1;height:6px;accent-color:var(--blue)" oninput="updateConfig('min-entrega',this.value)">
+                <div class="config-val" id="val-min-entrega" style="min-width:36px;text-align:center">10</div>
+              </div>
             </div>
-            <div class="config-row">
+            <div class="config-row" style="margin-top:16px">
               <label>
                 <strong>Minutos entre paradas</strong>
                 Tiempo de traslado promedio
               </label>
-              <div class="config-val" id="val-min-traslado">15</div>
-              <input type="range" min="2" max="90" value="15" id="range-min-traslado" style="width:80px" oninput="updateConfig('min-traslado',this.value)">
+              <div style="display:flex;align-items:center;gap:12px;width:100%;margin-top:10px">
+                <input type="range" min="2" max="90" value="15" id="range-min-traslado" style="flex:1;height:6px;accent-color:var(--blue)" oninput="updateConfig('min-traslado',this.value)">
+                <div class="config-val" id="val-min-traslado" style="min-width:36px;text-align:center">15</div>
+              </div>
             </div>
           </div>
 
@@ -2184,9 +2188,16 @@ html { -webkit-text-size-adjust: 100%; }
               <button class="btn btn-secondary btn-sm" onclick="limpiarEntregasHoy()">
                 🗑️ Limpiar entregas del día
               </button>
+              <button class="btn btn-sm" onclick="comenzarDeCero()" style="background:#1C3A5E;border:1px solid #1E6FFF;color:#58A6FF;font-family:var(--font-body);font-size:13px;padding:10px 16px;border-radius:var(--radius-sm);cursor:pointer;font-weight:600">
+                🔄 Comenzar de cero
+              </button>
               <button class="btn btn-red btn-sm" onclick="limpiarTodo()">
                 ⚠️ Borrar todos los datos
               </button>
+            </div>
+            <div style="margin-top:12px;padding:10px;background:var(--bg-input);border-radius:var(--radius-sm);font-size:11.5px;color:var(--white-dim)">
+              <strong style="color:#58A6FF">🔄 Comenzar de cero</strong> borra solo las entregas y el historial.<br>
+              <span style="color:var(--white-faint)">Mantiene: Clientes, Choferes, Técnicos, Vendedores, Proveedores y Configuración.</span>
             </div>
           </div>
 
@@ -3944,6 +3955,18 @@ function limpiarEntregasHoy() {
   db.ref('entregas').remove()
     .then(() => toast('Entregas del día eliminadas', 'info'))
     .catch(() => toast('Error al limpiar', 'error'));
+}
+
+function comenzarDeCero() {
+  if (!confirm('🔄 COMENZAR DE CERO\n\nEsto va a borrar:\n• Todas las entregas\n• Historial de operaciones\n\nNO borra:\n• Clientes\n• Choferes\n• Técnicos\n• Vendedores\n• Proveedores\n• Configuración\n\n¿Confirmar?')) return;
+  db.ref('entregas').remove()
+    .then(() => {
+      toast('✅ Listo — podés empezar a medir desde cero', 'success');
+      APP.entregas = [];
+      renderEntregas();
+      renderDashboard();
+    })
+    .catch(() => toast('Error al reiniciar', 'error'));
 }
 
 function limpiarTodo() {
@@ -7291,20 +7314,6 @@ function guardarUbicacionChofer() {
           <div style="display:flex;gap:10px;justify-content:flex-end">
             <button class="btn btn-ghost" onclick="document.getElementById('modal-reprogramar').style.display='none'">Cancelar</button>
             <button class="btn btn-primary" onclick="confirmarReprogramacion()">🔄 Confirmar</button>
-          </div>
-        </div>
-      </div>
-    </div>x">
-            Indicá el motivo por el cual no se pudo realizar la entrega hoy.
-          </p>
-          <div class="form-group" style="margin-bottom:16px">
-            <label style="font-weight:600;margin-bottom:8px;display:block">Motivo de reprogramación *</label>
-            <textarea id="reprog-motivo" rows="3" placeholder="Ej: Cliente ausente, dirección cerrada, problema con el producto..."
-              style="width:100%;background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:14px;padding:10px 12px;resize:vertical;outline:none"></textarea>
-          </div>
-          <div style="display:flex;gap:10px;justify-content:flex-end">
-            <button class="btn btn-ghost" onclick="cerrarModal(&#39;modal-reprogramar&#39;)">Cancelar</button>
-            <button class="btn btn-primary" onclick="confirmarReprogramacion()">🔄 Confirmar Reprogramación</button>
           </div>
         </div>
       </div>
