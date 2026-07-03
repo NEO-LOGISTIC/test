@@ -3702,35 +3702,40 @@ function renderAccesos() {
     el.innerHTML = '<p style="color:var(--white-dim);font-size:13px">Sin usuarios registrados</p>';
     return;
   }
-  const grupos = { admin: [], chofer: [], tecnico: [], vendedor: [], otro: [] };
+
+  const rolesLabel = { admin:'👑 Admin', editor:'✏️ Editor', vendedor:'👤 Vendedor', chofer:'🚚 Chofer', tecnico:'🛠️ Técnico', compras_cobranzas:'💰 Compras/Cobr.', operaciones:'⚙️ Operaciones', invitado:'👁️ Invitado' };
+  const ordenGrupos = ['admin','editor','vendedor','chofer','tecnico','compras_cobranzas','operaciones','invitado'];
+  const grupos = {};
   todos.forEach(u => {
-    const g = u.rol === 'admin' ? 'admin' : u.tipo || u.rol || 'otro';
-    (grupos[g] || grupos.otro).push(u);
+    const g = u.rol || 'invitado';
+    if (!grupos[g]) grupos[g] = [];
+    grupos[g].push(u);
   });
-  const rolesLabel = { admin:'👑 Admin', chofer:'🚚 Chofer', tecnico:'🛠️ Técnico', vendedor:'👤 Vendedor', otro:'⚙️ Otro' };
+
   let html = '';
-  Object.entries(grupos).forEach(([grupo, users]) => {
+  ordenGrupos.forEach(grupo => {
+    const users = grupos[grupo] || [];
     if (!users.length) return;
-    html += `<div style="font-size:11px;font-weight:700;color:var(--white-faint);text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px">${rolesLabel[grupo]||grupo}</div>`;
+    html += `<div style="font-size:11px;font-weight:700;color:var(--white-faint);text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px">${rolesLabel[grupo]||grupo}</div>`;
     users.forEach(u => {
       const bloqueado = u.bloqueado === true;
       html += `<div class="acceso-row">
         <div class="acceso-pin ${bloqueado?'bloqueado':''}">${u.pin}</div>
         <div style="flex:1">
           <div style="font-weight:600;font-size:13px">${u.nombre||'—'}</div>
-          <div style="font-size:11px;color:var(--white-dim)">${u.rol||''}</div>
+          <div style="font-size:11px;color:var(--white-dim)">${rolesLabel[u.rol]||u.rol||''}</div>
         </div>
         <div style="display:flex;gap:6px">
-          <button class="btn btn-ghost btn-xs" onclick="editarPinAcceso('${u.pin}')" title="Editar PIN">✏️</button>
+          <button class="btn btn-ghost btn-xs" onclick="editarPinAcceso('${u.pin}')" title="Cambiar PIN">✏️ PIN</button>
           <button class="btn btn-xs" onclick="toggleBloqueoAcceso('${u.pin}')"
-            style="background:${bloqueado?'var(--green-bg)':'var(--red-bg)'};border:1px solid ${bloqueado?'var(--green)':'var(--red)'};color:${bloqueado?'var(--green)':'var(--red)'};border-radius:var(--radius-sm);padding:4px 8px;cursor:pointer;font-size:11px;font-weight:700">
+            style="background:${bloqueado?'var(--green-bg)':'var(--red-bg)'};border:1px solid ${bloqueado?'var(--green)':'var(--red)'};color:${bloqueado?'var(--green)':'var(--red)'};border-radius:var(--radius-sm);padding:4px 10px;cursor:pointer;font-size:11px;font-weight:700">
             ${bloqueado?'✅ Activar':'🔒 Bloquear'}
           </button>
         </div>
       </div>`;
     });
   });
-  el.innerHTML = html;
+  el.innerHTML = html || '<p style="color:var(--white-dim);font-size:13px">Sin usuarios</p>';
 }
 
 function editarPinAcceso(pinActual) {
