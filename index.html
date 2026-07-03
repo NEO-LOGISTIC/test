@@ -2900,17 +2900,13 @@ function seedClientesIniciales() {
 // Todos los clientes conectados ven cambios al instante
 
 function iniciarListenersFirebase() {
-  // ── ENTREGAS: solo últimos 30 días para velocidad ──────────
-  // Las pendientes/en camino se cargan siempre por separado
-  const hace30dias = Date.now() - (30 * 24 * 60 * 60 * 1000);
-  db.ref('entregas').orderByChild('ts').startAt(hace30dias).on('value', snap => {
+  // ── ENTREGAS: carga completa, filtrado en cliente ───────────
+  // Nota: cuando todas las entregas tengan campo 'ts' se puede
+  // optimizar con orderByChild('ts') para cargar solo recientes.
+  // Por ahora se cargan todas para compatibilidad con datos viejos.
+  db.ref('entregas').on('value', snap => {
     const data = snap.val() || {};
-    const recientes = Object.values(data);
-    // Mergear con pendientes viejas (sin ts o ts antiguo)
-    const pendViejas = (APP._pendientesViejas || []).filter(p =>
-      !recientes.find(r => r.id === p.id)
-    );
-    APP.entregas = [...recientes, ...pendViejas];
+    APP.entregas = Object.values(data);
     renderDashboard();
     renderEntregas();
     renderRuta();
@@ -2922,18 +2918,6 @@ function iniciarListenersFirebase() {
     const bp2 = document.getElementById('badge-planificar');
     if (bp2) bp2.textContent = APP.entregas.filter(e => !e.chofer && (e.estado==='pending'||e.estado==='transit')).length;
     if (APP._choferViewActivo) renderChoferView(APP._choferViewActivo);
-  });
-
-  // Cargar pendientes sin ts (entregas viejas sin timestamp)
-  db.ref('entregas').orderByChild('estado').equalTo('pending').once('value', snap => {
-    const p = Object.values(snap.val() || {});
-    const t = APP._pendientesViejas || [];
-    APP._pendientesViejas = [...t, ...p.filter(x => !t.find(y => y.id === x.id))];
-  });
-  db.ref('entregas').orderByChild('estado').equalTo('transit').once('value', snap => {
-    const p = Object.values(snap.val() || {});
-    const t = APP._pendientesViejas || [];
-    APP._pendientesViejas = [...t, ...p.filter(x => !t.find(y => y.id === x.id))];
   });
 
   // Clientes - carga una vez, no necesita tiempo real
