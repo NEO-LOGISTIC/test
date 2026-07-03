@@ -2954,6 +2954,10 @@ function iniciarListenersFirebase() {
   db.ref('pinesDinamicos').on('value', snap => {
     const data = snap.val() || {};
     Object.assign(USUARIOS, data);
+    // Si estamos en configuración, actualizar gestión de accesos
+    if (document.getElementById('page-configuracion')?.classList.contains('active')) {
+      renderAccesos();
+    }
   });
 
   // Proveedores
@@ -3145,7 +3149,7 @@ function navigate(page) {
   if (page === 'choferes')    renderChoferes();
   if (page === 'estadisticas') setTimeout(renderEstadisticas, 150);
   if (page === 'rutachofer')  { poblarSelectoresChofer(); renderRutaChofer(); }
-  if (page === 'configuracion') setTimeout(renderAccesos, 800);
+  if (page === 'configuracion') setTimeout(renderAccesos, 2000);
 
   closeSidebar();
   window.scrollTo(0,0);
