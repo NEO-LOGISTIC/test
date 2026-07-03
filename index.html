@@ -5455,21 +5455,31 @@ function renderEstadisticas() {
 
 function filtrarEntregasPorPeriodo(periodo) {
   const ahora = new Date();
-  const hoy = ahora.toDateString();
+  const hoyStr = ahora.toLocaleDateString('en-CA', { timeZone: 'America/Asuncion' });
+  const hoy = new Date(hoyStr + 'T00:00:00');
 
   return APP.entregas.filter(e => {
-    if (!e.fechaCreacion) return periodo === 'hoy' ? false : true;
-    const fecha = new Date(e.fechaCreacion);
-    if (periodo === 'hoy')    return fecha.toDateString() === hoy;
+    // Intentar obtener fecha: primero fechaCreacion, luego ts, luego incluir siempre
+    let fecha = null;
+    if (e.fechaCreacion) fecha = new Date(e.fechaCreacion);
+    else if (e.ts)       fecha = new Date(e.ts);
+
+    // Si no tiene fecha, incluir en todos los períodos excepto 'hoy'
+    if (!fecha) return periodo !== 'hoy';
+
+    if (periodo === 'hoy') {
+      const fStr = fecha.toLocaleDateString('en-CA', { timeZone: 'America/Asuncion' });
+      return fStr === hoyStr;
+    }
     if (periodo === 'semana') {
-      const semAgo = new Date(ahora); semAgo.setDate(ahora.getDate() - 7);
+      const semAgo = new Date(hoy); semAgo.setDate(hoy.getDate() - 7);
       return fecha >= semAgo;
     }
     if (periodo === 'mes') {
-      const mesAgo = new Date(ahora); mesAgo.setDate(ahora.getDate() - 30);
+      const mesAgo = new Date(hoy); mesAgo.setDate(hoy.getDate() - 30);
       return fecha >= mesAgo;
     }
-    return true; // todo
+    return true; // 'todo' — todo lo que está cargado en memoria
   });
 }
 
