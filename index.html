@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#0A0F1E"/>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="apple-touch-icon" href="./icon-192.png"/>
 <title>Neo Logistic — Sistema de Entregas</title>
 
 <!-- SheetJS para leer/exportar Excel -->
@@ -1102,6 +1104,17 @@ html { -webkit-text-size-adjust: 100%; }
   .entregas-desktop-view { display:none; }
 }
 
+/* ─── FILTRO FECHAS ──────────────────────────────────────── */
+.btn-ff { padding:5px 12px; border-radius:99px; border:1px solid var(--border); background:var(--bg-input); color:var(--white-dim); font-family:var(--font-body); font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.btn-ff:hover { border-color:var(--blue); color:var(--white); }
+.btn-ff.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+
+/* ─── GESTIÓN ACCESOS ────────────────────────────────────── */
+.acceso-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+.acceso-row:last-child { border-bottom:none; }
+.acceso-pin { font-family:var(--font-display); font-weight:800; font-size:18px; letter-spacing:3px; min-width:56px; color:var(--blue-light); }
+.acceso-pin.bloqueado { color:var(--red); text-decoration:line-through; opacity:.5; }
+
 </style>
 </head>
 <body>
@@ -1166,6 +1179,11 @@ html { -webkit-text-size-adjust: 100%; }
       NEO LOGISTIC v3.1 · Uso interno<br>
       <span style="color:#4D8FFF;opacity:.6">Ingresá tu PIN para acceder</span>
     </div>
+
+    <button id="btn-instalar-app" onclick="instalarApp()" class="hidden"
+      style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:16px;padding:12px;background:#0F1729;border:1px solid #1E6FFF;border-radius:12px;color:#4D8FFF;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">
+      📲 Instalar app en este dispositivo
+    </button>
   </div>
 </div>
 
@@ -1415,6 +1433,22 @@ html { -webkit-text-size-adjust: 100%; }
               <option value="rescheduled">Reprogramado</option>
             </select>
           </div>
+        </div>
+
+        <!-- Filtro de fechas -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+          <button class="btn-ff active" id="ff-hoy"    onclick="setFiltroFecha('hoy')">📅 Hoy</button>
+          <button class="btn-ff"        id="ff-ayer"   onclick="setFiltroFecha('ayer')">Ayer</button>
+          <button class="btn-ff"        id="ff-semana" onclick="setFiltroFecha('semana')">Esta semana</button>
+          <button class="btn-ff"        id="ff-mes"    onclick="setFiltroFecha('mes')">Este mes</button>
+          <button class="btn-ff"        id="ff-periodo" onclick="setFiltroFecha('periodo')">📆 Período</button>
+          <button class="btn-ff"        id="ff-todos"  onclick="setFiltroFecha('todos')">Todos</button>
+          <div id="ff-rango" style="display:none;gap:6px;align-items:center;flex-wrap:wrap">
+            <input type="date" id="ff-desde" onchange="filtrarEntregas()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:12px;padding:6px 10px;outline:none">
+            <span style="color:var(--white-dim);font-size:12px">→</span>
+            <input type="date" id="ff-hasta" onchange="filtrarEntregas()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:12px;padding:6px 10px;outline:none">
+          </div>
+          <span id="ff-count" style="font-size:12px;color:var(--white-dim)"></span>
         </div>
 
         <!-- Vista desktop: tabla -->
@@ -1829,6 +1863,14 @@ html { -webkit-text-size-adjust: 100%; }
               <button class="btn btn-primary" onclick="enviarRutaChoferWA()">📱 Enviar por WhatsApp</button>
             </div>
           </div>
+
+          <!-- Selector punto de inicio -->
+          <div id="rc-inicio-wrap" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);display:none">
+            <div style="font-size:12px;color:var(--white-dim);margin-bottom:6px">🚦 ¿Desde qué parada empieza el chofer? <span style="color:var(--white-faint)">(opcional — si no elegís, se usa el orden recomendado)</span></div>
+            <select id="rc-inicio-selector" onchange="renderRutaChofer()" style="background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--white);font-family:var(--font-body);font-size:13px;padding:8px 14px;outline:none;width:100%;cursor:pointer">
+              <option value="">— Orden recomendado —</option>
+            </select>
+          </div>
         </div>
 
 
@@ -2161,6 +2203,15 @@ html { -webkit-text-size-adjust: 100%; }
             </div>
           </div>
 
+          <!-- Gestión de accesos -->
+          <div class="card">
+            <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:4px">🔑 Gestión de Accesos</div>
+            <p style="font-size:12px;color:var(--white-dim);margin-bottom:16px">Administrá los PINs de todos los usuarios. Podés cambiar PINs o bloquear accesos.</p>
+            <div id="accesos-lista">
+              <div style="color:var(--white-dim);font-size:13px">Cargando usuarios...</div>
+            </div>
+          </div>
+
           <!-- Datos del negocio -->
           <div class="card">
             <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:16px">🏢 Datos del Negocio</div>
@@ -2484,6 +2535,11 @@ html { -webkit-text-size-adjust: 100%; }
     <input type="hidden" id="mv-id">
 
     <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="form-group" id="mv-pin-row">
+        <label>PIN de acceso (4 dígitos)</label>
+        <input type="text" id="mv-pin" placeholder="Auto-asignado" maxlength="4" inputmode="numeric" style="font-family:var(--font-display);font-weight:700;font-size:18px;letter-spacing:3px;color:var(--blue-light)" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)">
+        <small style="color:var(--white-faint);font-size:11px">Sugerido automáticamente — podés editarlo si querés asignar otro</small>
+      </div>
       <div class="form-group">
         <label>Nombre completo *</label>
         <input type="text" id="mv-nombre" placeholder="Ej: Juan Pérez" >
@@ -2695,6 +2751,40 @@ document.addEventListener('DOMContentLoaded', () => {
   initLogin();
 });
 
+// ─── PWA: SERVICE WORKER + BOTÓN INSTALAR ──────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+let _deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+  const btn = document.getElementById('btn-instalar-app');
+  if (btn) btn.classList.remove('hidden');
+});
+
+function instalarApp() {
+  if (!_deferredInstallPrompt) {
+    toast('Para instalar: usá el menú del navegador → "Agregar a pantalla de inicio"', 'info');
+    return;
+  }
+  _deferredInstallPrompt.prompt();
+  _deferredInstallPrompt.userChoice.then(() => {
+    _deferredInstallPrompt = null;
+    const btn = document.getElementById('btn-instalar-app');
+    if (btn) btn.classList.add('hidden');
+  });
+}
+
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('btn-instalar-app');
+  if (btn) btn.classList.add('hidden');
+  toast('✅ Neo Logistic instalado correctamente', 'success');
+});
+
 // ─── FIREBASE CONFIG ──────────────────────────────────────
 // ⚙️ Credenciales del proyecto Neo Logistic
 const firebaseConfig = {
@@ -2810,10 +2900,17 @@ function seedClientesIniciales() {
 // Todos los clientes conectados ven cambios al instante
 
 function iniciarListenersFirebase() {
-  // Entregas - solo las del día actual para velocidad
-  db.ref('entregas').on('value', snap => {
+  // ── ENTREGAS: solo últimos 30 días para velocidad ──────────
+  // Las pendientes/en camino se cargan siempre por separado
+  const hace30dias = Date.now() - (30 * 24 * 60 * 60 * 1000);
+  db.ref('entregas').orderByChild('ts').startAt(hace30dias).on('value', snap => {
     const data = snap.val() || {};
-    APP.entregas = Object.values(data);
+    const recientes = Object.values(data);
+    // Mergear con pendientes viejas (sin ts o ts antiguo)
+    const pendViejas = (APP._pendientesViejas || []).filter(p =>
+      !recientes.find(r => r.id === p.id)
+    );
+    APP.entregas = [...recientes, ...pendViejas];
     renderDashboard();
     renderEntregas();
     renderRuta();
@@ -2822,11 +2919,21 @@ function iniciarListenersFirebase() {
     if (document.getElementById('page-estadisticas')?.classList.contains('active')) renderEstadisticas();
     refrescarMapaSiVisible();
     updateBadges();
-    // Badge planificar
     const bp2 = document.getElementById('badge-planificar');
     if (bp2) bp2.textContent = APP.entregas.filter(e => !e.chofer && (e.estado==='pending'||e.estado==='transit')).length;
-    // Si estamos en vista chofer, actualizar también
     if (APP._choferViewActivo) renderChoferView(APP._choferViewActivo);
+  });
+
+  // Cargar pendientes sin ts (entregas viejas sin timestamp)
+  db.ref('entregas').orderByChild('estado').equalTo('pending').once('value', snap => {
+    const p = Object.values(snap.val() || {});
+    const t = APP._pendientesViejas || [];
+    APP._pendientesViejas = [...t, ...p.filter(x => !t.find(y => y.id === x.id))];
+  });
+  db.ref('entregas').orderByChild('estado').equalTo('transit').once('value', snap => {
+    const p = Object.values(snap.val() || {});
+    const t = APP._pendientesViejas || [];
+    APP._pendientesViejas = [...t, ...p.filter(x => !t.find(y => y.id === x.id))];
   });
 
   // Clientes - carga una vez, no necesita tiempo real
@@ -2856,6 +2963,13 @@ function iniciarListenersFirebase() {
     poblarSelectChoferEnEntrega();
     poblarSelectoresChofer(); // actualizar selector ruta por chofer
     updateBadges();
+  });
+
+  // PINs dinámicos — vendedores/usuarios creados desde la app (super admin asigna PIN)
+  // Se mergean con el objeto USUARIOS hardcodeado en tiempo de ejecución
+  db.ref('pinesDinamicos').on('value', snap => {
+    const data = snap.val() || {};
+    Object.assign(USUARIOS, data);
   });
 
   // Proveedores
@@ -3047,6 +3161,7 @@ function navigate(page) {
   if (page === 'choferes')    renderChoferes();
   if (page === 'estadisticas') setTimeout(renderEstadisticas, 150);
   if (page === 'rutachofer')  { poblarSelectoresChofer(); renderRutaChofer(); }
+  if (page === 'configuracion') setTimeout(renderAccesos, 100);
 
   closeSidebar();
   window.scrollTo(0,0);
@@ -3263,9 +3378,10 @@ function guardarEntrega() {
     mapsLink:  document.getElementById('f-maps-link')?.value.trim() || '',
     coords:    window._coordsActuales || null,
     estado:    document.getElementById('f-estado').value,
-    horaAgregado: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+    horaAgregado: horaPY(),
     fechaEntrega: null,
-    fechaCreacion: new Date().toISOString()
+    fechaCreacion: new Date().toISOString(),
+    ts: Date.now()
   };
 
   // Guardar como proveedor si es retiro
@@ -3414,6 +3530,21 @@ function renderEntregas(filtro = '', estadoFiltro = '') {
   if (rol === 'operaciones' || rol === 'compras_cobranzas') {
     lista = lista.filter(e => e.tipo === 'retiro' || e.tipo === 'cobranza');
   }
+
+  // ── Filtro de fecha ──
+  // Pendientes/en camino: SIEMPRE visibles sin importar el período
+  // Completadas/reprogramadas: se filtran por período elegido
+  const rango = getRangoFecha();
+  if (rango) {
+    lista = lista.filter(e => {
+      const esPend = e.estado === 'pending' || e.estado === 'transit';
+      if (esPend) return true;
+      const f = e.fechaCreacion ? new Date(e.fechaCreacion) : (e.ts ? new Date(e.ts) : null);
+      if (!f) return false;
+      return f >= rango.desde && f <= rango.hasta;
+    });
+  }
+
   if (filtro) {
     const f = filtro.toLowerCase();
     lista = lista.filter(e =>
@@ -3425,6 +3556,13 @@ function renderEntregas(filtro = '', estadoFiltro = '') {
   }
   if (estadoFiltro) {
     lista = lista.filter(e => e.estado === estadoFiltro);
+  }
+
+  // Mostrar contador
+  const countEl = document.getElementById('ff-count');
+  if (countEl) {
+    const pend = lista.filter(e => e.estado==='pending'||e.estado==='transit').length;
+    countEl.textContent = `${lista.length} entregas${pend ? ' · ' + pend + ' pendientes' : ''}`;
   }
 
   const vacio = lista.length === 0;
@@ -3442,8 +3580,8 @@ function renderEntregas(filtro = '', estadoFiltro = '') {
     const ahora = new Date();
     const fecha  = new Date(iso);
     const dias   = Math.floor((ahora - fecha) / 86400000);
-    const hora   = fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-    const fechaStr = fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    const hora   = fecha.toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Asuncion' });
+    const fechaStr = fecha.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', timeZone: 'America/Asuncion' });
     if (dias === 0) return { label: 'Hoy ' + hora,           clase: 'hoy' };
     if (dias === 1) return { label: 'Ayer ' + fechaStr,      clase: 'reciente' };
     if (dias <= 3)  return { label: 'Hace ' + dias + 'd',    clase: 'reciente' };
@@ -3532,10 +3670,111 @@ function renderEntregas(filtro = '', estadoFiltro = '') {
   });
 }
 
+// ─── FILTRO FECHA ENTREGAS ─────────────────────────────────
+APP._filtroFecha = 'hoy';
+
+function setFiltroFecha(tipo) {
+  APP._filtroFecha = tipo;
+  ['hoy','ayer','semana','mes','periodo','todos'].forEach(t => {
+    document.getElementById('ff-'+t)?.classList.toggle('active', t === tipo);
+  });
+  const rango = document.getElementById('ff-rango');
+  if (rango) rango.style.display = tipo === 'periodo' ? 'flex' : 'none';
+  filtrarEntregas();
+}
+
+function getRangoFecha() {
+  const tipo = APP._filtroFecha || 'hoy';
+  const hoyStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Asuncion' });
+  const hoy = new Date(hoyStr + 'T00:00:00');
+  if (tipo === 'hoy')    return { desde: hoy, hasta: new Date(hoy.getTime() + 86400000 - 1) };
+  if (tipo === 'ayer')   { const a = new Date(hoy.getTime()-86400000); return { desde: a, hasta: new Date(hoy.getTime()-1) }; }
+  if (tipo === 'semana') { const l = new Date(hoy); l.setDate(hoy.getDate()-((hoy.getDay()+6)%7)); return { desde: l, hasta: new Date(hoy.getTime()+86400000-1) }; }
+  if (tipo === 'mes')    return { desde: new Date(hoy.getFullYear(), hoy.getMonth(), 1), hasta: new Date(hoy.getTime()+86400000-1) };
+  if (tipo === 'periodo') {
+    const dv = document.getElementById('ff-desde')?.value;
+    const hv = document.getElementById('ff-hasta')?.value;
+    return { desde: dv ? new Date(dv+'T00:00:00') : new Date(0), hasta: hv ? new Date(hv+'T23:59:59') : new Date() };
+  }
+  return null; // todos
+}
+
 function filtrarEntregas() {
-  const filtro = document.getElementById('search-entregas').value;
-  const estado = document.getElementById('filter-estado').value;
+  const filtro = document.getElementById('search-entregas')?.value || '';
+  const estado = document.getElementById('filter-estado')?.value || '';
   renderEntregas(filtro, estado);
+}
+
+// ─── GESTIÓN DE ACCESOS ────────────────────────────────────
+function renderAccesos() {
+  const el = document.getElementById('accesos-lista');
+  if (!el) return;
+  // Unir USUARIOS hardcoded + pinesDinamicos (ya mergeados en USUARIOS)
+  const todos = Object.entries(USUARIOS).map(([pin, u]) => ({ pin, ...u }));
+  if (!todos.length) { el.innerHTML = '<p style="color:var(--white-dim);font-size:13px">Sin usuarios</p>'; return; }
+  const grupos = { admin: [], chofer: [], tecnico: [], vendedor: [], otro: [] };
+  todos.forEach(u => {
+    const g = u.rol === 'admin' ? 'admin' : u.tipo || u.rol || 'otro';
+    (grupos[g] || grupos.otro).push(u);
+  });
+  const rolesLabel = { admin:'👑 Admin', chofer:'🚚 Chofer', tecnico:'🛠️ Técnico', vendedor:'👤 Vendedor', otro:'⚙️ Otro' };
+  let html = '';
+  Object.entries(grupos).forEach(([grupo, users]) => {
+    if (!users.length) return;
+    html += `<div style="font-size:11px;font-weight:700;color:var(--white-faint);text-transform:uppercase;letter-spacing:1px;margin:12px 0 6px">${rolesLabel[grupo]||grupo}</div>`;
+    users.forEach(u => {
+      const bloqueado = u.bloqueado === true;
+      html += `<div class="acceso-row">
+        <div class="acceso-pin ${bloqueado?'bloqueado':''}">${u.pin}</div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:13px">${u.nombre||'—'}</div>
+          <div style="font-size:11px;color:var(--white-dim)">${u.rol||''}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-xs" onclick="editarPinAcceso('${u.pin}')" title="Editar PIN">✏️</button>
+          <button class="btn btn-xs" onclick="toggleBloqueoAcceso('${u.pin}')"
+            style="background:${bloqueado?'var(--green-bg)':'var(--red-bg)'};border:1px solid ${bloqueado?'var(--green)':'var(--red)'};color:${bloqueado?'var(--green)':'var(--red)'};border-radius:var(--radius-sm);padding:4px 8px;cursor:pointer;font-size:11px;font-weight:700">
+            ${bloqueado?'✅ Activar':'🔒 Bloquear'}
+          </button>
+        </div>
+      </div>`;
+    });
+  });
+  el.innerHTML = html;
+}
+
+function editarPinAcceso(pinActual) {
+  const u = USUARIOS[pinActual];
+  if (!u) return;
+  const nuevoPIN = prompt(`Cambiar PIN de "${u.nombre}"\nPIN actual: ${pinActual}\n\nIngresá el nuevo PIN (4 dígitos):`);
+  if (!nuevoPIN) return;
+  if (!/^\d{4}$/.test(nuevoPIN)) { toast('El PIN debe tener exactamente 4 dígitos numéricos', 'error'); return; }
+  if (USUARIOS[nuevoPIN] && nuevoPIN !== pinActual) { toast(`El PIN ${nuevoPIN} ya está en uso por ${USUARIOS[nuevoPIN].nombre}`, 'error'); return; }
+  const userData = { ...u };
+  const updates = {};
+  // Si es dinámico, actualizar en Firebase
+  updates['pinesDinamicos/' + pinActual] = null;
+  updates['pinesDinamicos/' + nuevoPIN]  = { ...userData, id: userData.id || ('u_'+Date.now()) };
+  db.ref().update(updates).then(() => {
+    delete USUARIOS[pinActual];
+    USUARIOS[nuevoPIN] = userData;
+    toast(`PIN de "${u.nombre}" cambiado a ${nuevoPIN}`, 'success');
+    renderAccesos();
+  }).catch(() => toast('Error al cambiar PIN', 'error'));
+}
+
+function toggleBloqueoAcceso(pin) {
+  const u = USUARIOS[pin];
+  if (!u) return;
+  const nuevoEstado = !u.bloqueado;
+  const accion = nuevoEstado ? 'bloquear' : 'activar';
+  if (!confirm(`¿${accion.charAt(0).toUpperCase()+accion.slice(1)} el acceso de "${u.nombre}"?`)) return;
+  USUARIOS[pin].bloqueado = nuevoEstado;
+  // Persistir en Firebase
+  db.ref('pinesDinamicos/' + pin).update({ ...u, bloqueado: nuevoEstado })
+    .catch(() => {}); // Si no está en pinesDinamicos no importa — solo bloquea en sesión
+  toast(`${u.nombre} ${nuevoEstado ? '🔒 bloqueado' : '✅ activado'}`, nuevoEstado ? 'error' : 'success');
+  renderAccesos();
 }
 
 // ─── RENDER CLIENTES ───────────────────────────────────────
@@ -3786,7 +4025,7 @@ function cambiarEstado(nuevoEstado) {
   const e = APP.entregas.find(x => x.id === APP._entregaSeleccionada);
   if (!e) return;
   const cambios = { estado: nuevoEstado };
-  if (nuevoEstado === 'delivered') cambios.fechaEntrega = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  if (nuevoEstado === 'delivered') cambios.fechaEntrega = horaPY();
   fbActualizarEntrega(APP._entregaSeleccionada, cambios)
     .then(() => toast(`Estado actualizado: ${estadoLabel(nuevoEstado)}`, 'success'))
     .catch(() => toast('Error al actualizar. Revisá tu conexión.', 'error'));
@@ -3799,7 +4038,7 @@ function entregadoWhatsapp() {
   if (!e) return;
 
   e.estado = 'delivered';
-  e.fechaEntrega = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  e.fechaEntrega = horaPY();
   guardarStorage();
   renderDashboard();
   renderEntregas();
@@ -4017,6 +4256,19 @@ function formatearTiempo(minutos) {
   return `${h}h ${m > 0 ? m + 'm' : ''}`.trim();
 }
 
+// ─── HELPERS DE HORA — TIMEZONE PARAGUAY ───────────────────
+function horaPY() {
+  return new Date().toLocaleTimeString('es-PY', {
+    hour: '2-digit', minute: '2-digit',
+    timeZone: 'America/Asuncion'
+  });
+}
+function fechaHoyPY() {
+  // Devuelve YYYY-MM-DD según hora de Paraguay (no UTC)
+  const d = new Date().toLocaleString('en-CA', { timeZone: 'America/Asuncion' });
+  return d.split(',')[0];
+}
+
 function badgeHTML(estado) {
   const mapa = {
     pending:     ['pending',    '⏳', 'Pendiente'],
@@ -4142,6 +4394,17 @@ function renderVendedores() {
   });
 }
 
+function siguientePinVendedor() {
+  // PINs de vendedor reservados en el rango 1234+. USUARIOS ya incluye los
+  // dinámicos mergeados desde Firebase (pinesDinamicos) en tiempo real.
+  const pinsVendedorUsados = Object.keys(USUARIOS)
+    .filter(p => USUARIOS[p].tipo === 'vendedor')
+    .map(p => parseInt(p, 10))
+    .filter(n => !isNaN(n));
+  const maxPin = pinsVendedorUsados.length > 0 ? Math.max(...pinsVendedorUsados) : 1233;
+  return String(maxPin + 1);
+}
+
 function abrirModalNuevoVendedor() {
   document.getElementById('mv-titulo').textContent = 'Nuevo Vendedor';
   document.getElementById('mv-id').value = '';
@@ -4150,6 +4413,8 @@ function abrirModalNuevoVendedor() {
   document.getElementById('mv-zona').value = '';
   document.getElementById('mv-email').value = '';
   document.getElementById('mv-notif').checked = true;
+  document.getElementById('mv-pin').value = siguientePinVendedor();
+  document.getElementById('mv-pin-row').style.display = '';
   document.getElementById('modal-vendedor').classList.remove('hidden');
 }
 
@@ -4163,6 +4428,10 @@ function editarVendedor(id) {
   document.getElementById('mv-zona').value = v.zona || '';
   document.getElementById('mv-email').value = v.email || '';
   document.getElementById('mv-notif').checked = v.notif !== false;
+  // Mostrar el PIN ya asignado a este vendedor (buscar en USUARIOS)
+  const pinExistente = Object.keys(USUARIOS).find(p => USUARIOS[p].id === id);
+  document.getElementById('mv-pin').value = pinExistente || '—';
+  document.getElementById('mv-pin-row').style.display = '';
   document.getElementById('modal-vendedor').classList.remove('hidden');
 }
 
@@ -4171,7 +4440,17 @@ function guardarVendedor() {
   const wa     = document.getElementById('mv-wa').value.trim();
   if (!nombre) { toast('El nombre del vendedor es obligatorio', 'error'); return; }
 
-  const id = document.getElementById('mv-id').value;
+  const id  = document.getElementById('mv-id').value;
+  const pin = document.getElementById('mv-pin').value.trim();
+
+  if (pin && pin.length !== 4) { toast('El PIN debe tener 4 dígitos', 'error'); return; }
+
+  // Validar que el PIN no esté usado por otro usuario
+  if (pin) {
+    const pinOcupado = Object.entries(USUARIOS).find(([p, u]) => p === pin && u.id !== id);
+    if (pinOcupado) { toast(`El PIN ${pin} ya está en uso por ${pinOcupado[1].nombre}`, 'error'); return; }
+  }
+
   const datos = {
     nombre,
     wa,
@@ -4180,26 +4459,38 @@ function guardarVendedor() {
     notif: document.getElementById('mv-notif').checked,
   };
 
+  let vendedorId = id;
+
   if (id) {
     // Editar existente
     const v = APP.vendedores.find(x => x.id === id);
     if (v) {
       const oldNombre = v.nombre;
       Object.assign(v, datos);
-      // Actualizar nombre en entregas
       APP.entregas.forEach(e => { if (e.vendedor === oldNombre) e.vendedor = nombre; });
     }
     toast(`Vendedor "${nombre}" actualizado`, 'success');
   } else {
     // Nuevo
-    datos.id = 'v_' + Date.now();
+    vendedorId = 'v_' + Date.now();
+    datos.id = vendedorId;
     APP.vendedores.push(datos);
-    toast(`Vendedor "${nombre}" agregado`, 'success');
   }
 
-  fbGuardarVendedor(datos)
-    .then(() => { toast(id ? `Vendedor actualizado` : `Vendedor agregado`, 'success'); })
-    .catch(() => toast('Error al guardar vendedor', 'error'));
+  // Guardar/actualizar el PIN en Firebase (pinesDinamicos)
+  if (pin) {
+    // Quitar PIN viejo de este vendedor si cambió
+    const pinViejo = Object.keys(USUARIOS).find(p => USUARIOS[p].id === vendedorId && p !== pin);
+    const updates = {};
+    if (pinViejo) updates['pinesDinamicos/' + pinViejo] = null;
+    updates['pinesDinamicos/' + pin] = { rol: 'vendedor', nombre, tipo: 'vendedor', id: vendedorId };
+    db.ref().update(updates).catch(() => toast('Error al guardar PIN', 'error'));
+    toast(`✅ "${nombre}" guardado con PIN ${pin}`, 'success');
+  } else {
+    toast(id ? 'Vendedor actualizado' : `Vendedor "${nombre}" agregado (sin PIN)`, 'success');
+  }
+
+  fbGuardarVendedor(datos).catch(() => toast('Error al guardar vendedor', 'error'));
   cerrarModal('modal-vendedor');
 }
 
@@ -4693,7 +4984,7 @@ function confirmarEntregaChofer() {
   const e = APP.entregas.find(x => x.id === id);
   if (!e) return;
 
-  const hora = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  const hora = horaPY();
   const obsExtra = document.getElementById('mce-obs').value.trim();
 
   const cambios = {
@@ -4741,7 +5032,7 @@ function confirmarReprogramacion() {
   if (!motivo) { toast('Ingresá el motivo de reprogramación', 'error'); return; }
   const e = APP.entregas.find(function(x) { return x.id === id; });
   const obsAnterior = e && e.obs ? e.obs + ' | ' : '';
-  const hora = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  const hora = horaPY();
   fbActualizarEntrega(id, {
     estado: 'rescheduled',
     obs: obsAnterior + '🔄 Reprogramado ' + hora + ': ' + motivo
@@ -4858,14 +5149,15 @@ function actualizarDisplayPin() {
 
 function pinEnter() {
   const usuario = USUARIOS[_pinActual];
-  if (usuario) {
+  if (usuario && !usuario.bloqueado) {
     APP._rol      = usuario.rol;
     APP._usuario  = usuario;
     sessionStorage.setItem('nl_rol',     usuario.rol);
     sessionStorage.setItem('nl_usuario', JSON.stringify(usuario));
     mostrarApp();
   } else {
-    document.getElementById('pin-error').textContent = 'PIN incorrecto. Intentá de nuevo.';
+    const errMsg = usuario?.bloqueado ? '🔒 Acceso bloqueado. Contactá al administrador.' : 'PIN incorrecto. Intentá de nuevo.';
+    document.getElementById('pin-error').textContent = errMsg;
     // Shake animation
     const screen = document.querySelector('#login-screen > div');
     screen.style.transform = 'translateX(-8px)';
@@ -5233,13 +5525,12 @@ function renderAnalisisRecompra(entregas) {
   const el = document.getElementById('recompra-tabla');
   if (!el) return;
 
-  // Agrupar por cliente + zona
   const clientes = {};
   entregas.forEach(e => {
     if (!e.cliente) return;
     const k = e.codigo || e.cliente;
     if (!clientes[k]) {
-      clientes[k] = { nombre: e.cliente, zona: e.zona || '—', vendedor: e.vendedor || '—', count: 0, ultima: null };
+      clientes[k] = { nombre: e.cliente, zona: e.zona||'—', vendedor: e.vendedor||'—', count: 0, ultima: null };
     }
     clientes[k].count++;
     if (e.fechaCreacion) {
@@ -5248,46 +5539,73 @@ function renderAnalisisRecompra(entregas) {
     }
   });
 
-  const lista = Object.values(clientes).sort((a,b) => b.count - a.count).slice(0, 20);
+  const listaCompleta = Object.values(clientes).sort((a,b) => b.count - a.count);
+  if (!listaCompleta.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>Sin datos suficientes</p></div>';
+    return;
+  }
 
-  if (!lista.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><p>Sin datos suficientes para analizar</p></div>'; return; }
+  const pp  = APP._recompraPP  || 10;
+  const pag = APP._recompraPag || 1;
+  const totalPags = pp === 9999 ? 1 : Math.ceil(listaCompleta.length / pp);
+  const inicio = pp === 9999 ? 0 : (pag - 1) * pp;
+  const lista  = pp === 9999 ? listaCompleta : listaCompleta.slice(inicio, inicio + pp);
+
+  const filas = lista.map(c => {
+    const frec = c.count >= 4 ? 'Alta 🔥' : c.count >= 2 ? 'Media 📈' : 'Baja 📉';
+    const frecColor = c.count >= 4 ? 'var(--green)' : c.count >= 2 ? 'var(--yellow)' : 'var(--white-dim)';
+    let proxima = '—';
+    if (c.ultima && c.count >= 2) {
+      const prox = new Date(c.ultima);
+      prox.setDate(prox.getDate() + Math.round(30 / c.count));
+      proxima = prox.toLocaleDateString('es-PY', { day:'2-digit', month:'2-digit', timeZone:'America/Asuncion' });
+    }
+    return `<tr>
+      <td><strong>${c.nombre}</strong></td>
+      <td>${c.zona}</td><td>${c.vendedor}</td>
+      <td><strong style="font-family:var(--font-display)">${c.count}</strong></td>
+      <td><span style="color:${frecColor};font-weight:600">${frec}</span></td>
+      <td style="color:var(--blue-light)">${proxima}</td>
+    </tr>`;
+  }).join('');
+
+  const navPag = pp !== 9999 ? `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;flex-wrap:wrap;gap:8px">
+      <span style="font-size:12px;color:var(--white-dim)">${inicio+1}–${Math.min(inicio+pp, listaCompleta.length)} de ${listaCompleta.length}</span>
+      <div style="display:flex;gap:6px">
+        <button onclick="cambiarPagRC(-1)" ${pag<=1?'disabled':''} class="btn btn-ghost btn-xs">← Ant.</button>
+        <span style="font-size:12px;color:var(--white-dim)">${pag}/${totalPags}</span>
+        <button onclick="cambiarPagRC(1)" ${pag>=totalPags?'disabled':''} class="btn btn-ghost btn-xs">Sig. →</button>
+      </div>
+    </div>` : `<div style="font-size:12px;color:var(--white-dim);margin-top:8px">Todos los ${listaCompleta.length} clientes</div>`;
 
   el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;font-weight:600">📊 ${listaCompleta.length} clientes con entregas</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="setPPRC(10)"   class="btn btn-xs ${pp===10?'btn-primary':'btn-ghost'}">10</button>
+        <button onclick="setPPRC(25)"   class="btn btn-xs ${pp===25?'btn-primary':'btn-ghost'}">25</button>
+        <button onclick="setPPRC(9999)" class="btn btn-xs ${pp===9999?'btn-primary':'btn-ghost'}">Todos</button>
+      </div>
+    </div>
     <div class="table-wrap">
       <table>
-        <thead><tr>
-          <th>Cliente</th><th>Zona</th><th>Vendedor</th>
-          <th>Pedidos</th><th>Frecuencia</th><th>Próxima est.</th>
-        </tr></thead>
-        <tbody>
-          ${lista.map(c => {
-            const frec = c.count >= 4 ? 'Alta 🔥' : c.count >= 2 ? 'Media 📈' : 'Baja 📉';
-            const frecColor = c.count >= 4 ? 'var(--green)' : c.count >= 2 ? 'var(--yellow)' : 'var(--white-dim)';
-            // Estimación próxima compra basada en frecuencia
-            let proxima = '—';
-            if (c.ultima && c.count >= 2) {
-              const diasPromedio = Math.round(30 / c.count);
-              const prox = new Date(c.ultima);
-              prox.setDate(prox.getDate() + diasPromedio);
-              proxima = prox.toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit' });
-            }
-            return `<tr>
-              <td><strong>${c.nombre}</strong>${c.coords ? ' <span style="color:var(--green);font-size:11px" title="Coordenadas exactas">📍</span>' : ''}</td>
-              <td>${c.zona}</td>
-              <td>${c.vendedor}</td>
-              <td><strong style="font-family:var(--font-display)">${c.count}</strong></td>
-              <td><span style="color:${frecColor};font-weight:600">${frec}</span></td>
-              <td style="color:var(--blue-light)">${proxima}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
+        <thead><tr><th>Cliente</th><th>Zona</th><th>Vendedor</th><th>Pedidos</th><th>Frecuencia</th><th>Próxima est.</th></tr></thead>
+        <tbody>${filas}</tbody>
       </table>
     </div>
+    ${navPag}
     <div style="font-size:11px;color:var(--white-faint);margin-top:10px;padding:8px">
-      💡 La estimación de próxima compra se calcula dividiendo 30 días entre la frecuencia de pedidos del cliente.
-      Este análisis es la base para integración futura con CRM.
-    </div>
-  `;
+      💡 Estimación calculada dividiendo 30 días entre la frecuencia de pedidos del cliente.
+    </div>`;
+}
+
+function setPPRC(n)  { APP._recompraPP = n; APP._recompraPag = 1; renderEstadisticas(); }
+function cambiarPagRC(d) {
+  const total = Object.values(APP.entregas.reduce((a,e) => { if(e.cliente) a[e.codigo||e.cliente]=1; return a; }, {})).length;
+  const pp = APP._recompraPP || 10;
+  APP._recompraPag = Math.max(1, Math.min(Math.ceil(total/pp), (APP._recompraPag||1) + d));
+  renderEstadisticas();
 }
 
 // ─── CHART POR TÉCNICO ────────────────────────────────────
@@ -5398,7 +5716,7 @@ function asistidoWhatsapp() {
   const e = APP.entregas.find(x => x.id === APP._entregaSeleccionada);
   if (!e) return;
 
-  const hora = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  const hora = horaPY();
   const cambios = { estado: 'asistido', fechaEntrega: hora };
   fbActualizarEntrega(e.id, cambios);
 
@@ -5475,7 +5793,7 @@ function setTabTecnico(tab) {
 // ─── COBRADO SIN AVISO ────────────────────────────────────
 function cobradoSinAviso() {
   if (!APP._entregaSeleccionada) return;
-  const hora = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  const hora = horaPY();
   fbActualizarEntrega(APP._entregaSeleccionada, { estado: 'cobrado', fechaEntrega: hora })
     .then(() => toast('💰 Cobranza registrada', 'success'))
     .catch(() => toast('Error al registrar cobranza', 'error'));
@@ -5491,7 +5809,7 @@ const _origCambiarEstado = cambiarEstado;
 
 function marcarCobradoChofer(id) {
   if (!confirm('¿Confirmar cobranza realizada?')) return;
-  const hora = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  const hora = horaPY();
   fbActualizarEntrega(id, { estado: 'cobrado', fechaEntrega: hora })
     .then(() => toast('💰 Cobranza registrada', 'success'))
     .catch(() => toast('Error al registrar', 'error'));
@@ -5499,7 +5817,7 @@ function marcarCobradoChofer(id) {
 
 function marcarRetiradoChofer(id) {
   if (!confirm('¿Confirmar retiro de mercadería?')) return;
-  const hora = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  const hora = horaPY();
   fbActualizarEntrega(id, { estado: 'retirado', fechaEntrega: hora })
     .then(() => toast('📦 Retiro registrado', 'success'))
     .catch(() => toast('Error al registrar', 'error'));
@@ -5826,9 +6144,11 @@ function actualizarMapa() {
 function renderRutaChofer() {
   const sel = document.getElementById('rc-selector');
   const choferFiltro = sel ? sel.value : '';
-  const lista = document.getElementById('rc-lista');
-  const empty = document.getElementById('rc-empty');
-  const stats = document.getElementById('rc-stats');
+  const lista  = document.getElementById('rc-lista');
+  const empty  = document.getElementById('rc-empty');
+  const stats  = document.getElementById('rc-stats');
+  const inicioWrap = document.getElementById('rc-inicio-wrap');
+  const inicioSel  = document.getElementById('rc-inicio-selector');
   if (!lista) return;
 
   let activas = APP.entregas.filter(e => e.estado === 'pending' || e.estado === 'transit');
@@ -5836,16 +6156,47 @@ function renderRutaChofer() {
     activas = activas.filter(e => e.chofer === choferFiltro || e.tecnico === choferFiltro);
   }
 
+  // Mostrar/ocultar selector de punto de inicio
+  if (inicioWrap) {
+    if (activas.length > 1) {
+      inicioWrap.style.display = 'block';
+      // Repoblar solo si cambió la cantidad (evitar reset al seleccionar)
+      const optsActuales = inicioSel ? inicioSel.querySelectorAll('option[value]').length : 0;
+      if (inicioSel && optsActuales !== activas.length) {
+        const valorAnterior = inicioSel.value;
+        inicioSel.innerHTML = '<option value="">— Orden recomendado —</option>' +
+          activas.map(e => `<option value="${e.id}">${e.cliente} · ${e.zona || e.direccion.substring(0,30)}</option>`).join('');
+        if (valorAnterior) inicioSel.value = valorAnterior;
+      }
+    } else {
+      inicioWrap.style.display = 'none';
+      if (inicioSel) inicioSel.value = '';
+    }
+  }
+
+  // Reordenar si hay punto de inicio seleccionado
+  const inicioId = inicioSel ? inicioSel.value : '';
+  if (inicioId) {
+    const idxInicio = activas.findIndex(e => e.id === inicioId);
+    if (idxInicio > 0) {
+      // Rotamos la lista para que empiece desde la parada elegida
+      activas = [...activas.slice(idxInicio), ...activas.slice(0, idxInicio)];
+    }
+  }
+
   // Stats
   if (stats) {
     const total = activas.length;
     const pendientes = activas.filter(e => e.estado === 'pending').length;
-    const enCamino  = activas.filter(e => e.estado === 'transit').length;
+    const enCamino   = activas.filter(e => e.estado === 'transit').length;
+    const tiempoEst  = total * ((APP.config?.minEntrega || 10) + (APP.config?.minTraslado || 15));
     stats.innerHTML = total === 0 ? '' :
-      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;font-size:13px">' +
+      '<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;font-size:13px;display:flex;gap:16px;flex-wrap:wrap;align-items:center">' +
       '📦 <strong>' + total + '</strong> paradas · ' +
       '⏳ <strong>' + pendientes + '</strong> pendientes · ' +
-      '🚚 <strong>' + enCamino + '</strong> en camino' +
+      '🚚 <strong>' + enCamino + '</strong> en camino · ' +
+      '⏱️ ~<strong>' + tiempoEst + '</strong> min estimados' +
+      (inicioId ? ' · <span style="color:var(--green);font-weight:600">🚦 Inicio personalizado</span>' : '') +
       '</div>';
   }
 
@@ -5857,10 +6208,10 @@ function renderRutaChofer() {
   empty?.classList.add('hidden');
 
   lista.innerHTML = activas.map((e, i) => `
-    <div class="route-item" style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
-      <div class="route-num" style="min-width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${i+1}</div>
+    <div class="route-item" style="display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)${i===0 && inicioId ? ';border-left:3px solid var(--green);padding-left:10px' : ''}">
+      <div class="route-num" style="min-width:28px;height:28px;border-radius:50%;background:${i===0 && inicioId ? 'var(--green)' : 'var(--blue)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">${i+1}</div>
       <div style="flex:1">
-        <div style="font-weight:700;font-size:14px">${e.cliente}</div>
+        <div style="font-weight:700;font-size:14px">${e.cliente}${i===0 && inicioId ? ' <span style="font-size:11px;background:var(--green-bg);color:var(--green);padding:1px 6px;border-radius:4px">INICIO</span>' : ''}</div>
         <div style="font-size:12px;color:var(--white-dim)">${e.direccion}${e.zona ? ' · ' + e.zona : ''}</div>
         <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           ${tipoBadgeHTML(e.tipo)} ${badgeHTML(e.estado)}
@@ -6403,7 +6754,7 @@ function desasignarChofer(id) {
 function marcarDespachada(id) {
   const e = APP.entregas.find(function(x) { return x.id === id; });
   if (!e) return;
-  const hora = new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+  const hora = horaPY();
   fbActualizarEntrega(id, {estado:'despachada', fechaEntrega:hora}).then(function() {
     toast('📬 Encomienda despachada', 'success');
     if (e.vendedor) {
