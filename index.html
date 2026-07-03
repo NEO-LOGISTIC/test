@@ -3145,7 +3145,7 @@ function navigate(page) {
   if (page === 'choferes')    renderChoferes();
   if (page === 'estadisticas') setTimeout(renderEstadisticas, 150);
   if (page === 'rutachofer')  { poblarSelectoresChofer(); renderRutaChofer(); }
-  if (page === 'configuracion') setTimeout(renderAccesos, 100);
+  if (page === 'configuracion') setTimeout(renderAccesos, 800);
 
   closeSidebar();
   window.scrollTo(0,0);
@@ -3693,9 +3693,11 @@ function filtrarEntregas() {
 function renderAccesos() {
   const el = document.getElementById('accesos-lista');
   if (!el) return;
-  // Unir USUARIOS hardcoded + pinesDinamicos (ya mergeados en USUARIOS)
   const todos = Object.entries(USUARIOS).map(([pin, u]) => ({ pin, ...u }));
-  if (!todos.length) { el.innerHTML = '<p style="color:var(--white-dim);font-size:13px">Sin usuarios</p>'; return; }
+  if (!todos.length) {
+    el.innerHTML = '<p style="color:var(--white-dim);font-size:13px">Sin usuarios registrados</p>';
+    return;
+  }
   const grupos = { admin: [], chofer: [], tecnico: [], vendedor: [], otro: [] };
   todos.forEach(u => {
     const g = u.rol === 'admin' ? 'admin' : u.tipo || u.rol || 'otro';
