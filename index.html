@@ -3149,7 +3149,7 @@ function navigate(page) {
   if (page === 'choferes')    renderChoferes();
   if (page === 'estadisticas') setTimeout(renderEstadisticas, 150);
   if (page === 'rutachofer')  { poblarSelectoresChofer(); renderRutaChofer(); }
-  if (page === 'configuracion') setTimeout(renderAccesos, 2000);
+  if (page === 'configuracion') { renderAccesos(); }
 
   closeSidebar();
   window.scrollTo(0,0);
@@ -5183,7 +5183,8 @@ function mostrarApp() {
   poblarSelectVendedorForm();
   poblarSelectChoferEnEntrega();
   poblarSelectorRutaDia();
-  // Auto-seleccionar vendedor si es perfil vendedor
+  // Renderizar accesos inmediatamente (USUARIOS ya está cargado hardcodeado)
+  renderAccesos();
   setTimeout(() => {
     if ((APP._rol === 'vendedor' || APP._rol === 'editor') && APP._usuario?.nombre) {
       const selV = document.getElementById('f-vendedor');
