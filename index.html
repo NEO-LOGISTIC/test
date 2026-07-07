@@ -2212,7 +2212,10 @@ html { -webkit-text-size-adjust: 100%; }
           <!-- Gestión de accesos -->
           <div class="card">
             <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:4px">🔑 Gestión de Accesos</div>
-            <p style="font-size:12px;color:var(--white-dim);margin-bottom:16px">Administrá los PINs de todos los usuarios. Podés cambiar PINs o bloquear accesos.</p>
+            <p style="font-size:12px;color:var(--white-dim);margin-bottom:12px">Administrá los PINs de todos los usuarios. Podés cambiar PINs o bloquear accesos.</p>
+            <button class="btn btn-primary btn-sm" onclick="navigate('vendedores')" style="margin-bottom:14px;font-size:12px">
+              ➕ Agregar usuario vendedor
+            </button>
             <div id="accesos-lista">
               <div style="color:var(--white-dim);font-size:13px">Cargando usuarios...</div>
             </div>
@@ -2853,7 +2856,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const choferToken = urlParams.get('chofer');
   if (choferToken) {
     APP._choferViewActivo = choferToken;
-    // Ocultar login, mostrar app para chofer
     const ls = document.getElementById('login-screen');
     if (ls) ls.style.display = 'none';
     document.getElementById('app').style.display = 'flex';
@@ -2861,10 +2863,20 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Mostrar pantalla de login
   document.getElementById('app').style.display = 'none';
   setFechaTopbar();
-  initLogin();
+
+  // ── Cargar pinesDinamicos ANTES de mostrar el login ────────
+  // Esto asegura que los usuarios agregados desde la app puedan
+  // iniciar sesión incluso en celulares lentos
+  firebase.database().ref('pinesDinamicos').once('value', snap => {
+    const data = snap.val() || {};
+    Object.assign(USUARIOS, data);
+    initLogin();
+  }).catch(() => {
+    // Si falla (sin conexión), igual mostrar el login con usuarios hardcodeados
+    initLogin();
+  });
 });
 
 // ─── PWA: SERVICE WORKER + BOTÓN INSTALAR ──────────────────
@@ -5263,6 +5275,7 @@ const USUARIOS = {
   '1243': { rol: 'vendedor', nombre: 'Iomara Salinas',     tipo: 'vendedor', id: 'v_010'  },
   '1244': { rol: 'vendedor', nombre: 'Talia Nine',         tipo: 'vendedor', id: 'v_011'  },
   '1245': { rol: 'vendedor', nombre: 'Paola Souza',        tipo: 'vendedor', id: 'v_012'  },
+  '1146': { rol: 'vendedor', nombre: 'Liz Insfran',        tipo: 'vendedor', id: 'v_013'  },
   // ── TÉCNICOS ───────────────────────────────────────────
   '3333': { rol: 'tecnico',  nombre: 'Pedro Fernandez',    tipo: 'tecnico',  id: 'tc_001' },
   '3334': { rol: 'tecnico',  nombre: 'Cristian Ramirez',   tipo: 'tecnico',  id: 'tc_002' },
